@@ -212,7 +212,7 @@ void render_results(const Shift *st, const char *bonus, int bonus_points)
     ui_draw_centered_text(355, "HOME TO QUIT", 10, C_STEEL_LO);
 }
 
-void render_title(void)
+void render_title(const char *warning)
 {
     ui_draw_centered_text(90,  "makemecookies!", 26, C_NEON);
     ui_draw_centered_text(125, "x4", 26, C_FROSTING);
@@ -223,4 +223,7 @@ void render_title(void)
     ui_draw_centered_text(275, "1 OVEN      2 PACKING", 10, C_SPRINKLE);
 
     ui_draw_centered_text(330, "PRESS A TO CLOCK ON", 14, C_BUTTER);
+
+    if (warning && warning[0])
+        ui_draw_centered_text(375, warning, 8, C_DANGER);
 }

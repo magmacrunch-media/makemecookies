@@ -215,4 +215,44 @@ extern const int STATION_BUTTON[S_COUNT];
    number key. */
 extern const char *const STATION_GLYPH[S_COUNT];
 
+/* -- Autopilot -------------------------------------------------------
+ * Plays the shift itself, with no controller attached. Set to 1, rebuild, and
+ * the title screen is skipped and the line runs unattended to the results
+ * card.
+ *
+ * This is here because on this machine there is no other way to see gameplay.
+ * Dolphin's emulated Wiimote reads the keyboard through DirectInput, which
+ * does not observe injected keystrokes, so no script can press the five
+ * stations -- see the note in AGENTS.md, which is worth reading before
+ * spending an afternoon on SendInput. magnolia's own template recommends a
+ * compile-time hook for exactly this reason.
+ *
+ * It is guarded rather than deleted because "does it still run on hardware"
+ * is a question worth being able to answer in two minutes, and because the
+ * web version's tuning was arrived at by simulating full shifts rather than
+ * by playing them -- the same method wants the same tool here.
+ *
+ * AUTOPILOT_EVERY is how many frames pass between decisions, which is this
+ * bot's whole notion of skill: at 60fps, 6 frames is a 100ms reaction and 42
+ * is 700ms. The web version measured 29 cookies at 140ms against 12 at 700ms,
+ * so a build here that shows no gap between those two settings means the ramp
+ * has lost its skill gradient -- which is precisely what the first pass of
+ * the tuning did, and what nobody noticed until it was measured.
+ *
+ * WHAT IT CANNOT TELL YOU: it is a perfect prioritiser. It never burns a tray,
+ * never overfills the hopper and never summons the health inspector, so a
+ * clean autopilot run says nothing about whether goldenMs is too generous or
+ * whether the inspector ever appears in real play. Only hands can. Treat a
+ * green autopilot run as "the port works", never as "the game is tuned".
+ *
+ * Guarded with #ifndef so a build can override it without editing this file:
+ *   make CFLAGS="-g -O2 -Wall \$(MACHDEP) \$(INCLUDE) -DAUTOPILOT=1"
+ */
+#ifndef AUTOPILOT
+#define AUTOPILOT 0
+#endif
+#ifndef AUTOPILOT_EVERY
+#define AUTOPILOT_EVERY 6        /* frames between decisions; 6 ~= 100ms at 60fps */
+#endif
+
 #endif

@@ -23,7 +23,9 @@ void render_shift(const Shift *st, const Tuning *T);
    was earned. `bonus` is NULL when the shift was too messy to earn one. */
 void render_results(const Shift *st, const char *bonus, int bonus_points);
 
-/* The title card, shown until the player starts a shift. */
-void render_title(void);
+/* The title card, shown until the player starts a shift. `warning` is drawn
+   under it when non-empty -- the audio/config mismatch has nowhere else to go,
+   since printf reaches nothing on this stack. NULL or "" draws none. */
+void render_title(const char *warning);
 
 #endif

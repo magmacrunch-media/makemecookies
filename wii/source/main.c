@@ -43,6 +43,11 @@ const int STATION_BUTTON[S_COUNT] = {
 
 const char *const STATION_GLYPH[S_COUNT] = { "<", "^", "v", "1", "2" };
 
+/* Empty unless the linked music.pcm and config.h's SHIFT_MS disagree. Shown on
+   the title screen, because that is the only place a warning can actually be
+   seen -- see the note where it is set. */
+static char audio_warning[80];
+
 /* -- The shift clock -------------------------------------------------
  * On the web the song IS the clock: main.js reads music.currentTime every
  * frame, so the difficulty ramp and the four RUSH windows stay on the music
@@ -87,6 +92,57 @@ static int rush_index(double elapsed, double shift_ms)
     return -1;
 }
 
+/* -- Autopilot -------------------------------------------------------
+ * Compiled out entirely unless config.h's AUTOPILOT is 1. See the long note
+ * there for why it exists and, more importantly, for what a clean autopilot
+ * run does not prove.
+ *
+ * It reads the Shift struct rather than working to a stopwatch, so it acts on
+ * what is actually happening -- pull when the tray is golden, eject when the
+ * mixer is ready, unstick when the belt jams. A blind timed bot was tried
+ * first and is not worth repeating: it drifts out of step the moment the ramp
+ * tightens, and then every zero it produces looks like a bug in the game.
+ *
+ * The order below is the priority order, and it is the interesting part. The
+ * oven comes first because it is the only station that makes mess on its own;
+ * packing before the belt because a full tray blocks the oven behind it; the
+ * hopper last because it is the only one that can wait.
+ */
+#if AUTOPILOT
+static void autopilot(Shift *st, const Tuning *T, double now, int frame)
+{
+    int i, jammed = 0;
+
+    if (frame % AUTOPILOT_EVERY) return;
+
+    /* The oven, in the order it goes wrong. */
+    if (st->oven.phase == OVEN_FIRE)    { mmc_press(st, S_OVEN, T, now); return; }
+    if (st->oven.phase == OVEN_GOLDEN)  { mmc_press(st, S_OVEN, T, now); return; }
+    if (st->oven.phase == OVEN_BURNING) { mmc_press(st, S_OVEN, T, now); return; }
+
+    /* A full tray costs the next cookie, so ship before it overflows. Holding
+       for the full four is the greedy line the multiplier rewards. */
+    if (st->pack.n_tray >= TRAY_CAP)    { mmc_press(st, S_PACK, T, now); return; }
+
+    for (i = 0; i < st->belt.n; i++) if (st->belt.items[i].sticky) jammed = 1;
+    if (jammed)                         { mmc_press(st, S_BELT, T, now); return; }
+
+    if (st->mixer.phase == MIX_READY || st->mixer.phase == MIX_OVER) {
+        mmc_press(st, S_MIXER, T, now);
+        return;
+    }
+    if (st->mixer.phase == MIX_IDLE) {
+        if (st->hopper.units < HOPPER_PER_MIX) mmc_press(st, S_HOPPER, T, now);
+        else                                   mmc_press(st, S_MIXER,  T, now);
+        return;
+    }
+
+    /* Nothing urgent: top the hopper up, stopping short of the spill
+       threshold, which is what a careful player does with a spare hand. */
+    if (st->hopper.units < HOPPER_MAX - 1)  mmc_press(st, S_HOPPER, T, now);
+}
+#endif
+
 /* -- A shift --------------------------------------------------------- */
 
 static void play_shift(double shift_ms)
@@ -130,6 +186,10 @@ static void play_shift(double shift_ms)
             }
         }
 
+#if AUTOPILOT
+        autopilot(&st, &T, now, clock_frame());
+#endif
+
         T = mmc_update_shift(&st, dt_ms, now);
 
         renderer_draw_background();
@@ -140,13 +200,32 @@ static void play_shift(double shift_ms)
     audio_stop_music();
     bonus = mmc_settle_shift(&st, &bonus_points);
 
-    /* The results card, until A or HOME. */
-    while (1) {
-        input_scan();
-        if (input_home_pressed() || input_a_pressed()) break;
-        renderer_draw_background();
-        render_results(&st, bonus, bonus_points);
-        renderer_finish();
+    /* Nothing is logged here on purpose. printf goes nowhere on this stack --
+       magnolia never calls CON_Init or SYS_STDIO_Report, so libogc's stdout is
+       not connected to anything, and Dolphin's log stays empty however
+       Logger.ini is set. Measured: a build with an unconditional printf at the
+       top of main() produced a 0-byte dolphin.log with OSREPORT, OSREPORT_HLE
+       and WriteToFile all True.
+
+       The screen is therefore the only output channel this game has, which is
+       why render_results() prints the whole tally rather than a score alone. */
+
+    /* The results card, until A or HOME -- except under autopilot, where no
+       button can ever arrive and this would wait for one forever. Long enough
+       to read, then it moves on by itself. */
+    {
+        double shown = 0.0;
+        while (1) {
+            input_scan();
+            if (input_home_pressed() || input_a_pressed()) break;
+            if (AUTOPILOT) {
+                shown += clock_dt() * 1000.0;
+                if (shown > 6000.0) break;
+            }
+            renderer_draw_background();
+            render_results(&st, bonus, bonus_points);
+            renderer_finish();
+        }
     }
 }
 
@@ -171,23 +250,33 @@ int main(void)
        the bytes and say so, rather than playing a subtly wrong shift. */
     shift_ms = music_ms_from_pcm(music_pcm_size);
     if (shift_ms < SHIFT_MS - 250.0 || shift_ms > SHIFT_MS + 250.0) {
-        printf("audio/music.pcm is %.0fms; config.h SHIFT_MS says %.0fms.\n",
-               shift_ms, SHIFT_MS);
-        printf("Using the file. Update SHIFT_MS to match, or the four RUSH "
-               "windows drift from the music.\n");
+        /* On the title screen, not through printf: printf reaches nothing on
+           this stack (see the note in play_shift), so a warning sent there is
+           a warning nobody ever receives -- which is worse than none, because
+           it reads in the source as though the case is handled. */
+        snprintf(audio_warning, sizeof(audio_warning),
+                 "MUSIC IS %dms, CONFIG SAYS %d - RUSH WINDOWS WILL DRIFT",
+                 (int)shift_ms, (int)SHIFT_MS);
     }
 
     while (1) {
         input_scan();
         if (input_home_pressed()) break;
 
-        if (input_a_pressed()) {
+        /* Under autopilot nobody is holding a controller, so the title screen
+           would be a dead end -- clock on by itself, then quit after the one
+           shift. Looping forever would mean a scripted run never ends and
+           whatever is capturing it has to guess when to stop, which is how a
+           screenshot of the *next* shift's empty scoreboard ends up being
+           filed as the result of this one. */
+        if (input_a_pressed() || AUTOPILOT) {
             play_shift(shift_ms);
+            if (AUTOPILOT) break;
             continue;
         }
 
         renderer_draw_background();
-        render_title();
+        render_title(audio_warning);
         renderer_finish();
     }
 

@@ -59,9 +59,11 @@ What is **lost** is the web version's self-correction. There, re-encoding the
 track moved the RUSH windows automatically. Here a re-encoded `music.pcm` and a
 stale `SHIFT_MS` would silently misplace all four windows and end the shift
 early — precisely the bug the web version hit when it read the duration once.
-So `main.c` derives the real length from the linked bytes at startup and prints
-a complaint if the two have drifted more than 250ms apart. **Do not delete that
-check**, and if you re-encode the track, read what `convert-audio.sh` prints.
+So `main.c` derives the real length from the linked bytes at startup and, if
+the two have drifted more than 250ms apart, shows the complaint **on the title
+card in red** — not through `printf`, which reaches nothing here (see below).
+**Do not delete that check**, and if you re-encode the track, read what
+`convert-audio.sh` prints.
 
 The music loops rather than ending, so `play_shift()` calls `audio_stop_music()`
 when the clock runs out. A shift is over when the clock says so, not when the
@@ -100,6 +102,90 @@ asserts `stations.js` is DOM-free.
 The corollary: the input mapping lives in `main.c`, not in `stations.c`, even
 though `config.h` declares it. `STATION_BUTTON` holds magnolia's `InputButton`
 values and the simulation never sees a button — it is handed a `Station`.
+
+## Dolphin cannot be driven by a script — use `AUTOPILOT`
+
+**Do not spend an afternoon on `SendInput`.** Dolphin's emulated Wiimote reads
+the keyboard through DirectInput (`Device = DInput/0/Keyboard Mouse` in
+`WiimoteNew.ini`), and DirectInput does not observe injected keystrokes. Neither
+`SendInput` nor `keybd_event` reaches the game, from either a foreground or a
+background process, and **nothing reports an error** — the keys simply do
+nothing.
+
+The mouse is the exception and is what makes this so confusing to diagnose.
+`Buttons/A` defaults to `Click 0`, so a synthetic click *does* register: a
+script can start a shift and then find that not one of the five stations
+responds. That reads exactly like a broken input mapping in the game.
+
+Measured, not assumed: with the shift running, twelve `LEFT` presses — six via
+`SendInput` with scancodes, six via `keybd_event` — left `HOPPER` at its
+starting `4/6` with `MESS` at zero. A single hopper press would have moved both.
+
+So gameplay is verified with the compile-time hook instead, which is the
+pattern magnolia's own template recommends:
+
+```bash
+make CFLAGS='-g -O2 -Wall $(MACHDEP) $(INCLUDE) -DAUTOPILOT=1'
+```
+
+That skips the title, plays the shift unattended, shows the results for six
+seconds and then stops driving. Both timeouts matter: without them the results
+card waits for an A press that can never arrive, and `main()` starts a second
+shift immediately — which is how a capture ends up showing the *next* shift's
+empty scoreboard and getting filed as this one's result. **Returning from
+`main()` does not close Dolphin**, so a scripted run still has to close the
+emulator itself; measured, it was still up 64s in.
+
+`AUTOPILOT_EVERY` sets the reaction time in frames; see the note in
+`source/config.h`.
+
+`AUTOPILOT` defaults to 0 and compiles away entirely — verified by building the
+tree twice, once with `AUTOPILOT=0` and once with every `#if AUTOPILOT` block
+physically deleted, and comparing: byte-identical (`31f74e0b…`). Note it is
+*not* identical to the binary from before the hook landed, and should not be:
+the same change fixed the printf bug below, which altered real shipped
+behaviour.
+
+A run is reproducible. Two builds of this autopilot, a fortnight of
+fiddling apart, both finished 6100 / 20 shipped / 22 perfect.
+
+## printf reaches nothing — the screen is the only output
+
+magnolia never calls `CON_Init` or `SYS_STDIO_Report`, so libogc's stdout is
+not connected to anything and **`printf` output is discarded**. Measured: a
+build with an unconditional `printf` at the top of `main()` produced a **0-byte
+`dolphin.log`** with `OSREPORT`, `OSREPORT_HLE` and `WriteToFile` all `True`.
+
+This contradicts magnolia's own `template/README.md`, which says `printf`
+reaches Dolphin's log if `Logger.ini` is set up — and `george-boole/wii` has a
+`printf` at `source/main.c:93` that has therefore never produced a line. Treat
+the template's "Testing without a controller" advice as half right: the
+compile-time hook works, reading the log does not.
+
+The practical consequence is that **a diagnostic sent to `printf` is a
+diagnostic nobody receives**, which is worse than none because it reads in the
+source as though the case is handled. That is exactly what the first version of
+the `SHIFT_MS` mismatch check did. It now sets `audio_warning`, which
+`render_title()` draws under the title card in red. If you add a check here,
+put it on the screen.
+
+**A clean autopilot run does not mean the game is tuned.** The bot is a perfect
+prioritiser — in a full shift it recorded 22 perfect cookies, zero burnt, zero
+fires, zero spills and zero inspections. It cannot tell you whether `golden_ms`
+is too generous or whether the health inspector ever appears in real play. Only
+hands can, which is the same thing `../AGENTS.md` says about the web version's
+bot-measured tuning.
+
+Two further traps when capturing a run:
+
+- `SetForegroundWindow` is refused to a background process while another
+  application is taking focus, and **the refusal is silent** — the screenshot
+  then shows whatever is genuinely in front, which reads as the game having
+  rendered it. Pin Dolphin's own window with `SetWindowPos(HWND_TOPMOST)`
+  instead, and sanity-check a pixel.
+- Dolphin reuses an already-running instance, so kill it between runs or you
+  will read the previous run's log and screenshot a binary that is not the one
+  you just built.
 
 ## Tuning belongs to `web/`, not here
 
