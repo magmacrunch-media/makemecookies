@@ -31,6 +31,16 @@ function createShift() {
     pack:   { tray: [], boxUntil: 0, flying: [] },
 
     fx: { spills: [], pops: [], toast: null, shake: 0 },
+
+    // Counted for the ?debug report. Plain numbers, so stations.js stays
+    // DOM-free and the headless suite can still load it. What these are for:
+    // `overmixed` says whether readyMs is too tight, `burnt` says the same of
+    // goldenMs, and both are things a bot cannot tell you about real hands.
+    tally: {
+      perfect: 0, seconds: 0, raw: 0, burnt: 0,
+      overmixed: 0, spills: 0, jams: 0, boxes: 0,
+      fires: 0, fireMs: 0, peakMess: 0,
+    },
   };
 }
 
@@ -52,6 +62,7 @@ function toast(st, text, color) {
 }
 
 function spill(st, x, y, amount) {
+  st.tally.spills++;
   st.fx.spills.push({ x, y, t: 0 });
   st.fx.shake = Math.max(st.fx.shake, 6);
   addMess(st, amount);
@@ -124,6 +135,7 @@ function updateMixer(st, T, dtMs) {
     // sitting there and still has to be pressed out — it is just worth 45
     // instead of 100.
     m.phase = 'over'; m.quality = 'tough'; m.t = 0;
+    st.tally.overmixed++;
   }
 }
 
@@ -171,6 +183,7 @@ function updateBelt(st, T, dtMs, now) {
     const free = b.items.filter((i) => !i.sticky);
     if (free.length) {
       free[(Math.random() * free.length) | 0].sticky = true;
+      st.tally.jams++;
       toast(st, 'BELT JAM', C.warn);
     }
     b.nextStickAt = now + T.stickMs;
@@ -200,9 +213,11 @@ function updateOven(st, T, dtMs) {
     o.phase = 'burning'; o.t = 0;
   } else if (o.phase === 'burning' && o.t >= BURN_TO_FIRE_MS) {
     o.phase = 'fire'; o.t = 0; o.taps = [];
+    st.tally.fires++;
     toast(st, 'FIRE!', C.danger);
   } else if (o.phase === 'fire') {
     addMess(st, FIRE_MESS_RATE * dtMs / 1000);
+    st.tally.fireMs += dtMs;
   }
 }
 
@@ -235,6 +250,7 @@ function pressOven(st, T, now) {
   }
 
   o.phase = 'empty'; o.t = 0;
+  st.tally[grade]++;
   toPack(st, grade, now);
 }
 
@@ -269,6 +285,7 @@ function pressPack(st, T, now) {
   }
 
   p.tray = [];
+  st.tally.boxes++;
   p.boxUntil = now + BOX_MS;
   p.flying.push({ x: BAYS[S.PACK].x + 70, t: 0 });
 }
@@ -298,6 +315,8 @@ function updateShift(st, dtMs, now) {
   updateBelt(st, T, dtMs, now);
   updateOven(st, T, dtMs);
   updatePack(st, T, dtMs, now);
+
+  if (st.mess > st.tally.peakMess) st.tally.peakMess = st.mess;
 
   if (st.mess >= MESS.max) {
     st.inspectUntil = now + INSPECT_MS;

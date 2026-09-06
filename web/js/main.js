@@ -10,6 +10,13 @@ const canvas = document.getElementById('line');
 const ctx = canvas.getContext('2d');
 AdRPG.initCanvas(canvas);
 
+// ?debug turns the end-of-shift card into a readout. It exists because the
+// tuning was fitted by simulating shifts, and a simulated player is a perfect
+// prioritiser who never burns anything — so the numbers that matter most
+// (overmixed batches for readyMs, burnt trays for goldenMs) are exactly the
+// ones a bot cannot produce. This is how a real shift answers back.
+const DEBUG = new URLSearchParams(location.search).has('debug');
+
 let st = createShift();
 let running = false;
 let paused = false;
@@ -222,7 +229,33 @@ function endShift() {
   document.getElementById('final-bonus').textContent =
     bonus ? bonus.label + '  +' + bonus.points : 'NO CLEAN-UP BONUS';
   document.getElementById('initials-input').value = '';
+  reportShift(bonus);
   showModal('modal-gameover');
+}
+
+/**
+ * The shift, in numbers. Printed to the console always — it costs nothing and
+ * is there when something looks wrong — and shown on the card under ?debug,
+ * because a phone has no console and the phone is where this gets played.
+ */
+function reportShift(bonus) {
+  const t = st.tally;
+  const secs = (st.elapsed / 1000).toFixed(1);
+  const lines = [
+    `shipped ${st.shipped}   score ${st.score}   ${bonus ? bonus.label : 'no bonus'}   ${secs}s`,
+    `oven    perfect ${t.perfect}  seconds ${t.seconds}  raw ${t.raw}  burnt ${t.burnt}`,
+    `mixer   overmixed ${t.overmixed}   packing  boxes ${t.boxes}`,
+    `belt    jams ${t.jams}   spills ${t.spills}`,
+    `mess    peak ${Math.round(t.peakMess)}  final ${Math.round(st.mess)}  ` +
+      `fires ${t.fires} (${(t.fireMs / 1000).toFixed(1)}s)  inspections ${st.inspections}`,
+  ];
+  console.log('%c makemecookies shift ', 'background:#FF2E9C;color:#180C18', '\n' + lines.join('\n'));
+
+  const el = document.getElementById('debug-readout');
+  if (el) {
+    el.textContent = lines.join('\n');
+    el.hidden = !DEBUG;
+  }
 }
 
 function togglePause() {
