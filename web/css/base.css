@@ -1,0 +1,128 @@
+/* =====================================================================
+   makemecookies!x4 — base.css
+   Palette, reset, body, CRT overlay, background
+   ===================================================================== */
+
+:root {
+  /* Kitsch bakery neon. Warm on purpose — this sits beside tetris's cold
+     Nordic palette in the same arcade and must not be mistaken for it. */
+  --dough:    #F2D8A7;
+  --frosting: #FF5FA2;
+  --sprinkle: #41E8D1;
+  --butter:   #FFC93C;
+  --choc:     #4B2E1E;
+  --neon:     #FF2E9C;
+
+  --bg:       #180C18;
+  --panel-bg: #26122A;
+  --tile:     #34163A;
+
+  --border:        #3E1F45;
+  --border-bright: #6B3273;
+  --text:          #EAD9EC;
+  --subtext:       #9A7BA2;
+  --dim:           #5C3A64;
+
+  --glow-neon:     0 0 6px #FF2E9C, 0 0 18px rgba(255,46,156,0.35);
+  --glow-butter:   0 0 6px #FFC93C, 0 0 18px rgba(255,201,60,0.30);
+  --glow-sprinkle: 0 0 6px #41E8D1, 0 0 14px rgba(65,232,209,0.25);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* CRT scanlines */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.10) 3px,
+    rgba(0,0,0,0.10) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Tiled kitchen wall */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,46,156,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,46,156,0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+  z-index: 0;
+}
+
+/* Warm glow along the bottom, like an oven left open */
+.bg-horizon {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 220px;
+  background: linear-gradient(to top,
+    rgba(255,201,60,0.07),
+    rgba(255,46,156,0.04),
+    transparent);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mc-back {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--subtext);
+  text-decoration: none;
+  /* No z-index here on purpose. arcade-base.css sets 10000, which clears the
+     title overlay (8000); overriding it to 6000 buried the link underneath the
+     title card and left no way back to the arcade without the browser button. */
+  opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s;
+}
+.mc-back::before { content: '← '; }
+.mc-back:hover { opacity: 1; color: var(--frosting); }
+
+/* Breadcrumb. arcade-base.css pins .mc-back to the corner by itself; inside
+   the crumbs strip it goes static so the two links can sit side by side. */
+.mc-crumbs {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10000;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.mc-crumbs .mc-back { position: static; top: auto; left: auto; }
+
+.mc-crumb {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--subtext);
+  text-decoration: none;
+  opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s;
+}
+.mc-crumb::before { content: '/ '; opacity: 0.5; }
+.mc-crumb:hover { opacity: 1; color: var(--frosting); }
+
+body.game-active .mc-crumbs { display: none; }

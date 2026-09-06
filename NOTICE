@@ -1,0 +1,62 @@
+makemecookies!x4
+Copyright 2026 magmacrunch media
+
+
+THE LICENCE
+
+Everything in this repository -- the browser version in web/, the tests, the
+build files and the documentation -- is licensed under the PolyForm
+Noncommercial License 1.0.0, in the LICENSE file beside this one.
+
+Read it, learn from it, build on it, play with it. Any noncommercial purpose is
+permitted, and that includes personal projects, teaching and research. What is
+not permitted is commercial use: selling the game or a derivative of it,
+shipping it inside a product, or running it as part of a business.
+
+
+WHAT IS RESERVED OUTRIGHT
+
+The game ships no image files: the factory, its five machines, the dough, the
+cookies and the flames are all pixel sprites authored as string rows in
+web/js/pixels.js and drawn onto a canvas. So most of what you can see here is
+code, and the licence covers it.
+
+The music is the exception, and it is the important one.
+
+web/audio/ carries "makemecookies! x4." by Jimmi, a magmacrunch media record
+label act -- the game is named after the song, not the other way round. Unlike
+some of the other games here, the track is committed to this repository rather
+than served from the website's jukebox, because the whole design depends on it:
+a shift is one play of it, and the four RUSH windows are named for it.
+
+Its presence in this repository is not a licence to it. The recording, the
+composition and the master are Copyright 2026 magmacrunch media, all rights
+reserved. The .ogg and the .mp3 are the same recording in two formats, and the
+reservation covers both.
+
+Also reserved: the game's name, the magmacrunch name and marks, and the
+bakery-neon palette and visual design.
+
+Those are Copyright 2026 magmacrunch media, all rights reserved. The licence
+covers the software, and it grants no trademark rights.
+
+If you want to use any of it, ask.
+
+
+THIRD-PARTY COMPONENTS
+
+Press Start 2P, by CodeMan38, licensed under the SIL Open Font License 1.1.
+Share Tech Mono, by Carrois Apostrophe, under the same licence. Both are loaded
+from Google Fonts by web/index.html rather than shipped here.
+
+adenosine, the browser engine whose AdRPG module provides the game loop and
+input handling and whose score and chat clients the deployed page loads, is
+Copyright 2026 magmacrunch media under the Apache License 2.0. It is a separate
+repository and keeps that licence -- the engine is meant to be reused; this
+game is not.
+
+Note how little of it this game uses. AdRPG supplies a loop, a key-state map
+and four booleans; every pixel is drawn by web/js/render.js and every rule
+lives in web/js/stations.js. The music is deliberately not AdAudio's: that
+module hardcodes looping and exposes neither an ended event nor a playback
+position, and a round that *is* one play of a track needs all three.

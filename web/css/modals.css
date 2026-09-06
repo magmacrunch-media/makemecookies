@@ -1,0 +1,223 @@
+/* =====================================================================
+   makemecookies!x4 — modals.css
+   Structure follows arcade/tetris/modals.css; palette is this game's.
+   ===================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18,8,18,0.93);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.hidden { display: none; }
+
+.modal {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-bright);
+  box-shadow: var(--glow-neon), 0 0 50px rgba(255,46,156,0.12);
+  padding: 30px 28px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+}
+.modal::before, .modal::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--neon);
+  border-style: solid;
+  opacity: 0.6;
+}
+.modal::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.modal::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+.modal h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  color: var(--neon);
+  text-shadow: var(--glow-neon);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+.modal .modal-sub {
+  font-size: 10px;
+  color: var(--subtext);
+  letter-spacing: 3px;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.modal p {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.9;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.final-line {
+  font-size: 12px;
+  color: var(--subtext);
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.final-big {
+  font-size: 34px;
+  color: var(--butter);
+  text-shadow: var(--glow-butter);
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+.final-bonus {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--sprinkle);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.initials-input {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--neon);
+  color: var(--neon);
+  text-shadow: var(--glow-neon);
+  text-align: center;
+  width: 110px;
+  letter-spacing: 10px;
+  outline: none;
+  margin: 16px auto;
+  display: block;
+  text-transform: uppercase;
+}
+
+.modal .controls { margin-top: 14px; }
+
+/* scores table */
+.scores-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.scores-table th {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--neon);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-bright);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.scores-table td {
+  font-size: 14px;
+  color: var(--text);
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(107,50,115,0.45);
+  letter-spacing: 1px;
+}
+.scores-table tr:first-child td { color: var(--butter); text-shadow: var(--glow-butter); }
+.scores-table tr:nth-child(2) td { color: var(--frosting); }
+.scores-table tbody tr:hover td { background: rgba(255,46,156,0.06); }
+
+/* credits */
+.modal-credits {
+  max-width: 440px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.modal-titlebar {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  text-align: center;
+}
+.modal-titlebar h2 { margin-bottom: 2px; }
+.modal-titlebar .modal-sub { margin-bottom: 0; }
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-bright) transparent;
+  text-align: left;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+.credits-section {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.credits-section:last-of-type { border-bottom: none; margin-bottom: 8px; }
+.credits-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--neon);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.credits-value {
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 1px;
+  line-height: 1.8;
+}
+.credits-value a { color: var(--sprinkle); }
+.credits-value strong { color: var(--butter); text-shadow: var(--glow-butter); }
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Touch targets ──────────────────────────────────────────────────
+   The shared .btn is ~33px tall, under the 44px minimum, and these are the
+   ones you hit with a thumb at the end of a run: SUBMIT, ANOTHER SHIFT,
+   MAIN MENU, RESUME, CLOCK OUT, CLOSE. A modal floats over everything, so
+   the extra height costs the playfield nothing - unlike the in-page
+   controls, which have to share the vertical budget with the canvas. */
+@media (hover: none) and (pointer: coarse) {
+  .modal .btn {
+    min-height: 46px;
+    padding: 14px 18px;
+    font-size: 10px;
+  }
+
+  .initials-input {
+    min-height: 46px;
+    margin: 14px auto;
+  }
+
+  /* Taller controls can push a card past a short landscape viewport. Centring
+     with align-items would then clip the top beyond reach - the usual flexbox
+     trap - so switch to flex-start and let auto margins do the centring while
+     there is room, and scrolling take over when there is not. */
+  .modal-overlay {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .modal { margin: auto; }
+}
+
+/* Bigger buttons push the game-over card from 393px to 446px, which no longer
+   fits a 360px landscape viewport. The scroll above keeps it reachable, but a
+   card you have to scroll to finish a run is worse than one that fits: trim
+   the chrome and widen it enough that all three buttons share one row. */
+@media (hover: none) and (pointer: coarse) and (max-height: 480px) {
+  .modal { padding: 16px 20px; max-width: 540px; }
+  .modal h2 { font-size: 14px; margin-bottom: 2px; }
+  .modal .modal-sub { margin-bottom: 10px; }
+  .final-big { font-size: 24px; margin-bottom: 4px; }
+  .initials-input { margin: 8px auto; min-height: 44px; }
+  .modal .btn { min-height: 44px; padding: 12px 14px; }
+}

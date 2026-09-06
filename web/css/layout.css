@@ -1,0 +1,280 @@
+/* =====================================================================
+   makemecookies!x4 — layout.css
+   Page frame, header, HUD rail, canvas, buttons
+   ===================================================================== */
+
+#app {
+  position: relative;
+  z-index: 2;
+  width: min(980px, 97vw);
+  padding: 18px 10px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+header { text-align: center; }
+
+header h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(15px, 3.4vw, 26px);
+  color: var(--neon);
+  text-shadow: var(--glow-neon);
+  letter-spacing: 2px;
+  line-height: 1.5;
+}
+
+header .byline {
+  font-size: 10px;
+  color: var(--subtext);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.neon-stripe {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent, var(--sprinkle), var(--neon), var(--butter), transparent);
+  opacity: 0.75;
+}
+
+/* ── HUD rail ──────────────────────────────────────────────────────── */
+
+.hud {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hud-cell {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.hud-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--subtext);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.hud-value {
+  font-size: 22px;
+  color: var(--butter);
+  text-shadow: var(--glow-butter);
+  letter-spacing: 2px;
+}
+
+.hud-value.pink { color: var(--neon); text-shadow: var(--glow-neon); }
+.hud-value.urgent { color: #FF3B3B; text-shadow: 0 0 8px #FF3B3B; }
+
+#hud-rush {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #fff;
+  text-shadow: var(--glow-neon);
+  min-height: 14px;
+  letter-spacing: 2px;
+}
+
+/* ── Canvas ────────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  border: 2px solid var(--border-bright);
+  box-shadow: 0 0 34px rgba(255,46,156,0.18);
+  line-height: 0;
+  max-width: 100%;
+}
+
+#line {
+  display: block;
+  width: min(960px, 96vw);
+  height: auto;
+  image-rendering: pixelated;
+  touch-action: manipulation;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 11px 16px;
+  background: transparent;
+  color: var(--frosting);
+  border: 1px solid var(--frosting);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.btn:hover {
+  background: var(--frosting);
+  color: var(--bg);
+  box-shadow: var(--glow-neon);
+}
+.btn.mint { color: var(--sprinkle); border-color: var(--sprinkle); }
+.btn.mint:hover { background: var(--sprinkle); color: var(--bg); box-shadow: var(--glow-sprinkle); }
+.btn.gold { color: var(--butter); border-color: var(--butter); }
+.btn.gold:hover { background: var(--butter); color: var(--bg); box-shadow: var(--glow-butter); }
+
+/* ── Key legend ────────────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--subtext);
+  letter-spacing: 1px;
+}
+.legend b {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--dough);
+  margin-right: 5px;
+}
+
+@media (max-width: 640px) {
+  .hud-cell { min-width: 92px; padding: 6px 10px; }
+  .hud-value { font-size: 17px; }
+  .legend { font-size: 10px; gap: 9px; }
+}
+
+/* ── Touch controls ─────────────────────────────────────────────────
+   Hidden by default and revealed only on a touch-primary device, so a
+   desktop with a touchscreen keeps the keyboard legend instead of getting
+   both. The buttons carry the station names, which is why the legend is
+   replaced rather than shown alongside. */
+
+.touchpad { display: none; }
+
+.tp {
+  font-family: 'Share Tech Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 58px;
+  padding: 8px 2px;
+  background: var(--panel-bg);
+  color: var(--dough);
+  border: 1px solid var(--border-bright);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.tp b {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--neon);
+}
+.tp span { font-size: 10px; letter-spacing: 1px; color: var(--subtext); }
+.tp:active { background: var(--neon); }
+.tp:active b, .tp:active span { color: var(--bg); }
+
+@media (hover: none) and (pointer: coarse) {
+  .touchpad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+  .legend { display: none; }
+}
+
+/* ── Narrow portrait ────────────────────────────────────────────────
+   The playfield is 2.29:1, so in a tall window it is always a letterbox.
+   Give it every pixel of width and spend the reclaimed height on the
+   touch pad rather than on chrome. */
+@media (max-width: 480px) {
+  /* "COOKIES SHIPPED" wraps to two lines here and throws the HUD row out of
+     alignment; the number is the point, not the word. */
+  .wide-only { display: none; }
+  #app { width: 100vw; padding: 10px 0 20px; gap: 8px; }
+  #line { width: 100vw; }
+  .stage { border-left: none; border-right: none; }
+  .hud, .controls, .touchpad { padding: 0 6px; }
+  header h1 { font-size: 15px; }
+  header .byline { font-size: 8px; letter-spacing: 2px; }
+  .hud-cell { min-width: 0; flex: 1; padding: 5px 6px; }
+  .hud-value { font-size: 15px; }
+}
+
+/* ── Short viewports (landscape phones) ─────────────────────────────
+   Without this the desktop-sized header and HUD push the canvas below the
+   fold, which is how the game "did not fit" in landscape despite landscape
+   being the right shape for it. */
+@media (max-height: 480px) {
+  #app { padding: 6px 6px 10px; gap: 6px; }
+  /* The canvas paints its own MAKEMECOOKIES! sign, so the page heading is
+     pure duplication exactly where vertical space is scarcest. */
+  header { display: none; }
+  header .byline { display: none; }
+  /* Size the playfield by height rather than width here. Width-sizing put the
+     canvas bottom - the meters, which are the whole readout - below the fold
+     at 341px tall in a 375px viewport. aspect-ratio derives the width back. */
+  #line {
+    aspect-ratio: 960 / 420;
+    /* 100vh on a phone is the height with the URL bar hidden, so while the bar
+       is showing this overflows and puts the meters back under the fold - the
+       exact bug the height-sizing was meant to fix. dvh tracks the viewport
+       that is actually visible; the vh line stays as the fallback. */
+    height: calc(100vh - 158px);
+    height: calc(100dvh - 158px);
+    width: auto;
+    max-width: 98vw;
+  }
+  .stage { max-width: 98vw; }
+  .neon-stripe { display: none; }
+  .hud-cell { padding: 3px 10px; min-width: 78px; }
+  .hud-label { font-size: 7px; margin-bottom: 2px; }
+  .hud-value { font-size: 14px; }
+  #hud-rush { font-size: 9px; min-height: 10px; }
+  /* The shared chat bubble is fixed bottom-right and in landscape it covered
+     24% of SHIP - the button pressed most, and pressed in a hurry. Simply
+     moving it to the other corner just moved the problem onto FLOUR, because
+     the touch row spans the full width and reaches both corners. So park it
+     bottom-left AND reserve that corner: the cost is ~3px per button, spread
+     across five, instead of a quarter of one of them being dead.
+     Scoped to this page - no other arcade game puts controls on the bottom
+     edge, so the widget is left alone everywhere else. */
+  #arcadeChatWidget { right: auto; left: 8px; bottom: 8px; }
+  .touchpad, .controls { padding-left: 64px; }
+  .tp { min-height: 42px; padding: 4px 2px; gap: 1px; }
+  .tp b { font-size: 10px; }
+  .tp span { font-size: 8px; }
+  .controls .btn { padding: 7px 10px; font-size: 8px; }
+}
+
+/* Shown only when the music actually fails, which on iOS it always did. */
+#audio-warning {
+  max-width: 680px;
+  padding: 8px 14px;
+  border: 1px solid var(--butter);
+  background: rgba(255, 201, 60, 0.08);
+  color: var(--butter);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-align: center;
+}

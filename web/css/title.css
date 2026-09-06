@@ -1,0 +1,147 @@
+/* =====================================================================
+   makemecookies!x4 — title.css
+   The start card. Doubles as the autoplay gate: the shift cannot begin
+   without a click or a keypress here, which is exactly what the browser
+   needs before it will let the song play.
+   ===================================================================== */
+
+#title-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255,46,156,0.16), transparent 62%),
+    var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  text-align: center;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#title-overlay.dismissing {
+  opacity: 0;
+  transform: scale(1.06);
+  pointer-events: none;
+}
+
+/* Checkerboard diner floor sweeping up the backdrop */
+#title-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255,46,156,0.05) 25%, transparent 25%,
+                    transparent 75%, rgba(255,46,156,0.05) 75%),
+    linear-gradient(45deg, rgba(255,46,156,0.05) 25%, transparent 25%,
+                    transparent 75%, rgba(255,46,156,0.05) 75%);
+  background-size: 56px 56px;
+  background-position: 0 0, 28px 28px;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.title-stack { position: relative; z-index: 1; }
+
+.title-main {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(17px, 5vw, 42px);
+  color: var(--neon);
+  text-shadow: 0 0 8px #FF2E9C, 0 0 30px rgba(255,46,156,0.5);
+  letter-spacing: 2px;
+  line-height: 1.45;
+  animation: sizzle 2.6s steps(1) infinite;
+}
+@keyframes sizzle {
+  0%, 88%, 92%, 100% { opacity: 1; }
+  90%                { opacity: 0.55; }
+}
+
+.title-x4 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(28px, 8vw, 66px);
+  color: var(--butter);
+  text-shadow: 0 0 10px #FFC93C, 0 0 34px rgba(255,201,60,0.45);
+  letter-spacing: 6px;
+  margin-top: 10px;
+}
+
+.title-sub {
+  font-size: 13px;
+  color: var(--subtext);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 16px;
+}
+
+.title-song {
+  font-size: 12px;
+  color: var(--sprinkle);
+  letter-spacing: 2px;
+  margin-top: 8px;
+}
+
+.title-line {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 88vw);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon), var(--butter), transparent);
+}
+
+.title-rules {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 92vw);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 18px;
+  font-size: 12px;
+  color: var(--text);
+  text-align: left;
+  letter-spacing: 1px;
+}
+.title-rules b {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--dough);
+  margin-right: 6px;
+}
+
+.title-note {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  color: var(--subtext);
+  letter-spacing: 2px;
+  max-width: 520px;
+  line-height: 1.8;
+}
+
+#btn-start-title {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  padding: 16px 30px;
+  animation: pulseStart 1.5s ease-in-out infinite;
+}
+@keyframes pulseStart {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,46,156,0); }
+  50%      { box-shadow: 0 0 22px rgba(255,46,156,0.65); }
+}
+
+.title-hint {
+  position: relative;
+  z-index: 1;
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* "or press space" is a lie on a phone. */
+@media (hover: none) and (pointer: coarse) {
+  .title-hint { display: none; }
+}

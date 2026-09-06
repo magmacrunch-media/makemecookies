@@ -1,0 +1,48 @@
+# CI for makemecookies!x4.
+#
+# Until this repository existed the rules ran nowhere automatically: the game
+# lived inside the website repo, whose workflows do not reach into
+# arcade/*/tests/, and it had no test suite at all. The tuning that ships was
+# arrived at by simulating full shifts, so the simulation being correct is not
+# a detail here — it is the thing the difficulty curve was fitted against.
+#
+# The health inspector is the reason this job matters most. It is the only
+# failure state in the game, a competent shift never triggers it, and it had
+# never once been observed in real play. A path nobody walks is a path that
+# breaks quietly.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web:
+    name: web simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # No dependencies and no package.json: the suite loads the shipped
+      # modules into a vm context using only node's standard library, which is
+      # what keeps it honest about testing what ships.
+      - name: The rules, headless
+        working-directory: web/tests
+        run: node test-simulation.js
+
+      # js/stations.js is the simulation and must stay DOM-free, or the suite
+      # above stops being able to load it at all. Cheaper to assert than to
+      # rediscover the day someone reaches for getElementById.
+      - name: The rules stay DOM-free
+        run: |
+          if grep -nE '\b(document|window|localStorage)\b' web/js/stations.js; then
+            echo "::error file=web/js/stations.js::stations.js must not touch the DOM — the headless suite loads it without one"
+            exit 1
+          fi
+          echo "stations.js is clean"

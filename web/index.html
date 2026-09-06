@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAKEMECOOKIES!X4</title>
+<meta name="description" content="One song, one shift. Tend five stations of a cookie factory line — hopper, mixer, conveyor, oven, packing — for the 51 seconds of Jimmi's makemecookies! x4.">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23F2D8A7'/%3E%3Ccircle cx='11' cy='12' r='3' fill='%234B2E1E'/%3E%3Ccircle cx='21' cy='15' r='2.6' fill='%234B2E1E'/%3E%3Ccircle cx='15' cy='22' r='2.4' fill='%234B2E1E'/%3E%3C/svg%3E">
+
+<style>
+    :root {
+        --mc-back-color: #FF2E9C;
+        --mc-back-glow: 0 0 8px rgba(255, 46, 156, 0.95);
+    }
+</style>
+
+<link rel="stylesheet" href="../shared/arcade-base.css?v=de5e0d7b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css?v=abf25d69">
+<link rel="stylesheet" href="css/layout.css?v=d8e37fcb">
+<link rel="stylesheet" href="css/modals.css?v=d5d41805">
+<link rel="stylesheet" href="css/title.css?v=3953ebdd">
+
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-horizon"></div>
+
+<nav class="mc-crumbs">
+  <a href="../" class="mc-back">magmacrunch arcade</a>
+  <a href="../action/" class="mc-crumb">action</a>
+</nav>
+
+<div id="app">
+  <header>
+    <h1>MAKEMECOOKIES!<span style="color:var(--butter);text-shadow:var(--glow-butter)">X4</span></h1>
+    <div class="byline">one song · one shift · five stations</div>
+  </header>
+  <div class="neon-stripe"></div>
+
+  <div class="hud">
+    <div class="hud-cell">
+      <div class="hud-label">SCORE</div>
+      <div class="hud-value" id="hud-score">0</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label"><span class="wide-only">COOKIES </span>SHIPPED</div>
+      <div class="hud-value pink" id="hud-shipped">0</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">SHIFT</div>
+      <div class="hud-value" id="hud-time">0:51</div>
+    </div>
+  </div>
+
+  <div id="hud-rush"></div>
+  <div id="audio-warning" hidden></div>
+
+  <div class="stage">
+    <canvas id="line" width="960" height="420"></canvas>
+  </div>
+
+  <!-- Touch controls. These carry the same labels as the keyboard legend,
+       so on a phone you learn the stations by using them; the legend below is
+       hidden on touch rather than shown alongside. -->
+  <div class="touchpad" id="touchpad">
+    <button class="tp" data-bay="0"><b>1</b><span>FLOUR</span></button>
+    <button class="tp" data-bay="1"><b>2</b><span>MIX</span></button>
+    <button class="tp" data-bay="2"><b>3</b><span>BELT</span></button>
+    <button class="tp" data-bay="3"><b>4</b><span>OVEN</span></button>
+    <button class="tp" data-bay="4"><b>5</b><span>SHIP</span></button>
+  </div>
+
+  <div class="legend">
+    <span><b>1</b>dump flour</span>
+    <span><b>2</b>start / eject mix</span>
+    <span><b>3</b>unjam + boost belt</span>
+    <span><b>4</b>pull tray · mash to douse</span>
+    <span><b>5</b>box &amp; ship</span>
+    <span><b>ESC</b>pause</span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btn-pause" style="display:none">PAUSE</button>
+    <button class="btn mint" id="btn-scores">HIGH SCORES</button>
+    <button class="btn gold" id="btn-credits">CREDITS</button>
+  </div>
+</div>
+
+<!-- ── Title card ─────────────────────────────────────────────────── -->
+<div id="title-overlay">
+  <div class="title-stack">
+    <div class="title-main">MAKEMECOOKIES!</div>
+    <div class="title-x4">X4</div>
+    <div class="title-sub">a magmacrunch media cookie factory</div>
+    <div class="title-song">song: &ldquo;makemecookies! x4.&rdquo; by Jimmi &mdash; 0:51</div>
+  </div>
+
+  <div class="title-line"></div>
+
+  <div class="title-rules">
+    <span><b>1</b>HOPPER — dump flour, don't overfill</span>
+    <span><b>2</b>MIXER — start it, then eject before it toughens</span>
+    <span><b>3</b>BELT — unstick jams and boost the line</span>
+    <span><b>4</b>OVEN — pull it golden. Mash to fight fires</span>
+    <span><b>5</b>PACK — ship the box. Four cookies pays double</span>
+  </div>
+
+  <button class="btn" id="btn-start-title">CLOCK IN</button>
+  <div class="title-hint">or press space</div>
+</div>
+
+<!-- ── End of shift ───────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-gameover">
+  <div class="modal">
+    <h2>SHIFT OVER</h2>
+    <div class="modal-sub">the whistle blew</div>
+    <div class="final-line">score</div>
+    <div class="final-big" id="final-score">0</div>
+    <div class="final-line">cookies shipped: <span id="final-shipped">0</span></div>
+    <div class="final-bonus" id="final-bonus">&nbsp;</div>
+    <input class="initials-input" id="initials-input" maxlength="3" placeholder="AAA" autocomplete="off">
+    <div class="controls">
+      <button class="btn" id="btn-submit">SUBMIT</button>
+      <button class="btn mint" id="btn-play-again">ANOTHER SHIFT</button>
+      <button class="btn gold" id="btn-menu">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Pause ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-pause">
+  <div class="modal">
+    <h2>BREAK</h2>
+    <div class="modal-sub">the line is stopped</div>
+    <div class="controls">
+      <button class="btn" id="btn-resume">RESUME</button>
+      <button class="btn gold" id="btn-quit">CLOCK OUT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── High scores ────────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-scores">
+  <div class="modal">
+    <h2>BEST SHIFTS</h2>
+    <div class="modal-sub">magmacrunch arcade</div>
+    <table class="scores-table">
+      <thead>
+        <tr><th>#</th><th>WHO</th><th>SCORE</th><th>SHIPPED</th></tr>
+      </thead>
+      <tbody id="scores-tbody"></tbody>
+    </table>
+    <div class="controls">
+      <button class="btn mint" id="btn-close-scores">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Credits ────────────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-credits">
+  <div class="modal modal-credits">
+    <div class="modal-titlebar">
+      <h2>CREDITS</h2>
+      <div class="modal-sub">makemecookies!x4</div>
+    </div>
+    <div class="modal-body">
+      <div class="credits-section">
+        <div class="credits-label">MUSIC</div>
+        <div class="credits-value">
+          <strong>&ldquo;makemecookies! x4.&rdquo;</strong> by Jimmi, from the album
+          <em>JIMMI</em>. The game is built around the track: one play is one
+          shift, and the four rush windows are named for it.
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">BUILT WITH</div>
+        <div class="credits-value">
+          Vanilla HTML, CSS &amp; JavaScript &middot; Canvas API &middot;
+          <a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>
+          game engine &middot; Press Start 2P and Share Tech Mono
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">THE SHIFT</div>
+        <div class="credits-value">
+          The song is the clock. When it ends, so does your shift &mdash; there
+          is no losing, only how much you shipped and how much mess you left.
+          Fill the <strong>MESS</strong> bar and the health inspector stops the
+          line for four seconds while the music keeps playing.
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">HOW TO PLAY</div>
+        <div class="credits-value">
+          Keys <strong>1</strong>&ndash;<strong>5</strong> act on the station
+          above them; clicking a station works too. Each machine keeps its own
+          clock and none of them wait for you. The meter under each bay is how
+          close it is to spoiling.
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">SCORING</div>
+        <div class="credits-value">
+          Golden cookie <strong>100</strong> &middot; overmixed
+          <strong>45</strong> &middot; raw or burnt <strong>0</strong>. A box of
+          four pays <strong>&times;2</strong>; shipping inside a RUSH doubles it
+          again. Finish under 20 mess for <strong>SPOTLESS +500</strong>.
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">MADE BY</div>
+        <div class="credits-value">magmacrunch media</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn gold" id="btn-close-credits">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/adenosine-rpg.js?v=20bd6c8a"></script>
+<script src="../shared/adenosine-score-client.js?v=55cabd6d"></script>
+<script src="../shared/score-server.js?v=9acd988c"></script>
+<script>const scoreClient = new AdScore.ScoreClient().auto(MC_SCORE_OPTS);</script>
+<script src="js/config.js?v=fa4030e8"></script>
+<script src="js/pixels.js?v=43f9f1cb"></script>
+<script src="js/stations.js?v=8bfb1f85"></script>
+<script src="js/render.js?v=dbee2dcc"></script>
+<script src="js/main.js?v=4a68211a"></script>
+
+<link rel="stylesheet" href="../shared/chat-widget.css?v=21d22238">
+<script src="../shared/adenosine-chat.js?v=4a6b886b"></script>
+<script src="../shared/chat-server.js?v=2efa8028"></script>
+<script>const { ChatWidget } = AdChat;</script>
+<script>ChatWidget.connect(MC_CHAT_OPTS);</script>
+
+</body>
+</html>
