@@ -149,25 +149,32 @@ behaviour.
 A run is reproducible. Two builds of this autopilot, a fortnight of
 fiddling apart, both finished 6100 / 20 shipped / 22 perfect.
 
-## printf reaches nothing — the screen is the only output
+## printf works, but only since magnolia 0.3.0 — and needs Logger.ini
 
-magnolia never calls `CON_Init` or `SYS_STDIO_Report`, so libogc's stdout is
-not connected to anything and **`printf` output is discarded**. Measured: a
-build with an unconditional `printf` at the top of `main()` produced a **0-byte
-`dolphin.log`** with `OSREPORT`, `OSREPORT_HLE` and `WriteToFile` all `True`.
+`printf` reaches Dolphin's log through `SYS_STDIO_Report(true)`, which
+`magnolia_init()` calls. Set `OSREPORT = True` and `WriteToFile = True` in
+Dolphin's `Logger.ini`; both default to False, which makes a working trace look
+like a dead one.
 
-This contradicts magnolia's own `template/README.md`, which says `printf`
-reaches Dolphin's log if `Logger.ini` is set up — and `george-boole/wii` has a
-`printf` at `source/main.c:93` that has therefore never produced a line. Treat
-the template's "Testing without a controller" advice as half right: the
-compile-time hook works, reading the log does not.
+**This was not true when this port was written, and the history is the useful
+part.** magnolia did not make that call, so libogc left stdout attached to
+nothing and every `printf` in every game on the engine was discarded — measured
+as a **0-byte `dolphin.log`** with `OSREPORT`, `OSREPORT_HLE` and `WriteToFile`
+all `True`. The engine's own `template/README.md` documented the Logger.ini
+half alone, so the advice read as complete and the symptom read as "logging is
+off" rather than "nothing was ever sent". It survived three shipped games that
+way; `george-boole` had five `printf` calls that had never produced a line.
+Fixed in the engine rather than worked around here, and verified: booting
+george-boole now logs `run: mode=crumb bits=2 max=3`.
 
-The practical consequence is that **a diagnostic sent to `printf` is a
-diagnostic nobody receives**, which is worse than none because it reads in the
-source as though the case is handled. That is exactly what the first version of
-the `SHIFT_MS` mismatch check did. It now sets `audio_warning`, which
-`render_title()` draws under the title card in red. If you add a check here,
-put it on the screen.
+The lesson that outlives the bug: **a diagnostic nobody receives is worse than
+none**, because it reads in the source as though the case is handled. The first
+version of the `SHIFT_MS` mismatch check was exactly that.
+
+That check stays on the title card even now that logging works, and should: a
+re-encoded track is a mistake somebody makes while building, and the person who
+needs telling is looking at the screen, not at `dolphin.log`. Use `printf` for
+tracing, the screen for anything a person has to act on.
 
 **A clean autopilot run does not mean the game is tuned.** The bot is a perfect
 prioritiser — in a full shift it recorded 22 perfect cookies, zero burnt, zero

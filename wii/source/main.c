@@ -200,15 +200,27 @@ static void play_shift(double shift_ms)
     audio_stop_music();
     bonus = mmc_settle_shift(&st, &bonus_points);
 
-    /* Nothing is logged here on purpose. printf goes nowhere on this stack --
-       magnolia never calls CON_Init or SYS_STDIO_Report, so libogc's stdout is
-       not connected to anything, and Dolphin's log stays empty however
-       Logger.ini is set. Measured: a build with an unconditional printf at the
-       top of main() produced a 0-byte dolphin.log with OSREPORT, OSREPORT_HLE
-       and WriteToFile all True.
+#if AUTOPILOT
+    /* Reported to the log as well as the screen, because reading numbers off a
+       screenshot of an emulator is a poor way to measure: another window in
+       front of it at the wrong moment silently captures something else
+       entirely, and that happened repeatedly while this hook was being built.
 
-       The screen is therefore the only output channel this game has, which is
-       why render_results() prints the whole tally rather than a score alone. */
+       Needs magnolia 0.3.0 or newer, whose magnolia_init() calls
+       SYS_STDIO_Report(true) -- before that libogc left stdout attached to
+       nothing and this would have gone nowhere -- plus OSREPORT and
+       WriteToFile in Dolphin's Logger.ini, which both default to False. */
+    printf("autopilot: reaction=%d frames score=%d shipped=%d\n",
+           AUTOPILOT_EVERY, st.score, st.shipped);
+    printf("autopilot: perfect=%d seconds=%d raw=%d burnt=%d\n",
+           st.tally.graded[GRADE_PERFECT], st.tally.graded[GRADE_SECONDS],
+           st.tally.graded[GRADE_RAW], st.tally.graded[GRADE_BURNT]);
+    printf("autopilot: overmixed=%d jams=%d spills=%d fires=%d inspections=%d "
+           "boxes=%d peak_mess=%d bonus=%s\n",
+           st.tally.overmixed, st.tally.jams, st.tally.spills, st.tally.fires,
+           st.inspections, st.tally.boxes, (int)st.tally.peak_mess,
+           bonus ? bonus : "none");
+#endif
 
     /* The results card, until A or HOME -- except under autopilot, where no
        button can ever arrive and this would wait for one forever. Long enough
@@ -250,10 +262,14 @@ int main(void)
        the bytes and say so, rather than playing a subtly wrong shift. */
     shift_ms = music_ms_from_pcm(music_pcm_size);
     if (shift_ms < SHIFT_MS - 250.0 || shift_ms > SHIFT_MS + 250.0) {
-        /* On the title screen, not through printf: printf reaches nothing on
-           this stack (see the note in play_shift), so a warning sent there is
-           a warning nobody ever receives -- which is worse than none, because
-           it reads in the source as though the case is handled. */
+        /* On the title screen rather than through printf. printf does reach
+           Dolphin's log since magnolia 0.3.0, but only with the right
+           Logger.ini and only for somebody who thinks to look -- and this is
+           not a trace, it is a mistake made while building that misplaces all
+           four RUSH windows. The person who needs telling is looking at the
+           screen. An earlier version of this check used printf at a time when
+           printf reached nothing at all, which is how a handled-looking case
+           went two days without ever being able to fire. */
         snprintf(audio_warning, sizeof(audio_warning),
                  "MUSIC IS %dms, CONFIG SAYS %d - RUSH WINDOWS WILL DRIFT",
                  (int)shift_ms, (int)SHIFT_MS);
