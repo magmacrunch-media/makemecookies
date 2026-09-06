@@ -46,3 +46,34 @@ jobs:
             exit 1
           fi
           echo "stations.js is clean"
+
+  # The same rules again, in C. The host tests need nothing but a compiler —
+  # source/stations.c is free of libogc and GRRLIB — so they run on a
+  # GitHub-hosted runner. The devkitPPC build is not included, matching magnolia
+  # and the other magnolia games: it needs the self-hosted runner, and that job
+  # stays out until its label is confirmed.
+  #
+  # Two versions of one game are only one game for as long as something keeps
+  # checking, and this job is that something. The rules are what a port gets
+  # wrong, and it gets them wrong in ways that look like being right.
+  wii:
+    name: wii simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: make test
+        working-directory: wii
+        run: make test
+
+      # source/stations.c is the simulation and must stay free of the engine,
+      # or the job above stops being able to link it at all — the same property
+      # the web job asserts of stations.js, and lost the same way: one include
+      # reached for in a hurry.
+      - name: The rules stay engine-free
+        run: |
+          if grep -nE '#include[[:space:]]*[<"](grrlib|ogc/|magnolia|gccore)' wii/source/stations.c; then
+            echo "::error file=wii/source/stations.c::stations.c must not include the engine — the host suite links it without one"
+            exit 1
+          fi
+          echo "stations.c is clean"

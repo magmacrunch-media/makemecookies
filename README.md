@@ -15,13 +15,17 @@ no losing: only how much you shipped, and how much mess you left.
 | | |
 |---|---|
 | `web/` | Browser version. Built on [adenosine](https://github.com/magmacrunch-media/adenosine) over the Canvas API. Play it at [magmacrunch.com](https://magmacrunch.com/arcade/makemecookies/) |
+| `wii/` | Wii homebrew, built on [magnolia](https://github.com/magmacrunch-media/magnolia). **Rules ported and tested; everything you can see is a placeholder.** See `wii/README.md` |
 
 `web/` is the source of truth for rules and tuning. The website repo copies it
 into `arcade/makemecookies/` for deployment; its copy is generated and should
 never be edited directly.
 
-There is no second version yet. If one arrives it goes beside `web/` here,
-which is the reason this repository exists at all.
+The second version arrived, which is the reason this repository exists at all.
+`wii/source/stations.c` is a line-for-line port of `web/js/stations.js` and
+`wii/tests/test_stations.c` is the suite below ported case for case — that
+pairing is what keeps two versions of one game from becoming two games. A
+tuning change belongs in both `web/js/config.js` and `wii/source/config.h`.
 
 ## Playing
 

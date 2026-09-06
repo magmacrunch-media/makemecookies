@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<app version="1">
+  <name>makemecookies! x4</name>
+  <coder>magmacrunch media</coder>
+  <version>0.1.0</version>
+  <release_date>20260906000000</release_date>
+  <short_description>One song, one shift</short_description>
+  <long_description>A kitsch cookie factory you tend five stations of at once. Flour into the hopper, dough out of the mixer, along the belt, golden out of the oven, boxed and shipped — and none of the five machines waits for you.
+
+A round is exactly one play of Jimmi's "makemecookies! x4", and the track ending is the end-of-shift whistle. There is no losing: only how much you shipped, and how much mess you left behind.
+
+Hold the Wiimote sideways. Left, Up and Down work the hopper, the mixer and the conveyor; 1 and 2 work the oven and packing.
+
+Built with magnolia, a Wii homebrew game engine by magmacrunch.</long_description>
+</app>

@@ -8,9 +8,19 @@ One game, one repo, versions beside each other:
   by the website repo, which copies `web/` into `arcade/makemecookies/`. Never
   edit the website's copy directly — it gets overwritten.
 
-There is no second version yet, and none is planned in particular. The repo
-exists so that when one arrives it has somewhere to go, and so the rules have a
-home that is not inside a website.
+- `wii/` — Wii homebrew (C over [magnolia](https://github.com/magmacrunch-media/magnolia)
+  and GRRLIB). A **port**, not a second source of truth: `wii/source/stations.c`
+  follows `web/js/stations.js` line for line and `wii/source/config.h` carries
+  the same numbers as `web/js/config.js`. The rules are ported and tested; the
+  renderer is a placeholder and it has not run on a console yet. Read
+  `wii/AGENTS.md` before touching it — in particular, the song **cannot** be the
+  clock there, and the reason is not a shortcut.
+
+The second version arrived, which is what the repo existed for. The thing to
+protect from here is that they stay one game: a rule or a tuning value changed
+in one and not the other is the failure mode, it is silent, and the only thing
+watching for it is that each version's suite is the other's ported case for
+case. Change both, and say so in the commit.
 
 ## AI Attribution
 
