@@ -14,7 +14,7 @@ no losing: only how much you shipped, and how much mess you left.
 
 | | |
 |---|---|
-| `web/` | Browser version. Vanilla JS over the Canvas API. Play it at [magmacrunch.com](https://magmacrunch.com/arcade/makemecookies/) |
+| `web/` | Browser version. Built on [adenosine](https://github.com/magmacrunch-media/adenosine) over the Canvas API. Play it at [magmacrunch.com](https://magmacrunch.com/arcade/makemecookies/) |
 
 `web/` is the source of truth for rules and tuning. The website repo copies it
 into `arcade/makemecookies/` for deployment; its copy is generated and should
@@ -42,16 +42,24 @@ currency the game has to take from you.
 
 ## Running it locally
 
-It is a static page with no build step:
+It is a static page with no build step, but it will **not** run out of a bare
+checkout of this repo. `web/index.html` loads `../shared/adenosine-rpg.js`, and
+the game loop comes from it — with that script missing, `AdRPG` is undefined
+and `js/main.js` throws on its first line. Unlike the score and chat clients,
+which degrade quietly, this one is load-bearing.
+
+Serve it from a website checkout instead, where `arcade/shared/` sits beside
+the copy:
 
 ```
-cd web && python -m http.server 8080
+cd ../magmacrunch.com && make sync-makemecookies && python -m http.server 8080
 ```
 
-Then open <http://localhost:8080/>. The scoreboard and chat come from the
-website's shared bundles in `../shared/`, which only resolve once `web/` has
-been copied into the website's `arcade/` — locally they fail quietly and the
-game plays without them.
+Then open <http://localhost:8080/arcade/makemecookies/>. The scoreboard and
+chat additionally need their backends running, and fall back to localStorage
+and to nothing respectively when those are absent.
+
+The rules do not need any of this — see Tests below, which run on node alone.
 
 ## Tests
 
@@ -68,6 +76,31 @@ and dt invariance.
 The health inspector is worth singling out. It is the only failure state in the
 game and a competent shift never triggers it, so it is the least-exercised path
 here and the one most likely to rot unnoticed.
+
+## Built on adenosine
+
+[adenosine](https://github.com/magmacrunch-media/adenosine) is the browser
+engine behind the arcade, and this game runs on three of its modules:
+
+| | |
+|---|---|
+| `AdRPG` | The game loop, the input map, and the started/paused/over state |
+| `AdScore` | The leaderboard, talking to the MAGMA//OPS backend |
+| `AdChat` | The chat widget on the page |
+
+`AdRPG` is a harness rather than a framework here: `createGameLoop`,
+`initInput`, `initCanvas` and four state setters. Nothing in adenosine knows
+what a cookie is — every rule lives in `js/stations.js` and every pixel is
+drawn by `js/render.js`.
+
+`AdAudio` is the one module deliberately left out. It hardcodes looping and
+exposes neither an `ended` event nor a playback position, and a round that *is*
+one play of a track needs all three, so the song runs on a plain `<audio>`
+element instead. `AGENTS.md` has the detail.
+
+Those three bundles live in the website's `arcade/shared/` and are wired in at
+deploy time, which is why `web/index.html` points at `../shared/` — a path that
+resolves only once this folder has been copied into the website's `arcade/`.
 
 ## Audio
 
