@@ -49,9 +49,8 @@ jobs:
 
   # The same rules again, in C. The host tests need nothing but a compiler —
   # source/stations.c is free of libogc and GRRLIB — so they run on a
-  # GitHub-hosted runner. The devkitPPC build is not included, matching magnolia
-  # and the other magnolia games: it needs the self-hosted runner, and that job
-  # stays out until its label is confirmed.
+  # GitHub-hosted runner. The console build is the job below, which needs no
+  # particular machine either: devkitPro publish the toolchain as a container.
   #
   # Two versions of one game are only one game for as long as something keeps
   # checking, and this job is that something. The rules are what a port gets
@@ -77,3 +76,42 @@ jobs:
             exit 1
           fi
           echo "stations.c is clean"
+
+  wii-build:
+    name: wii build
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
+    steps:
+      # Checked out into a subdirectory so the engine can sit beside it. That is
+      # the layout the Makefile documents and a flat clone produces, so `make`
+      # resolves the engine through its own first default candidate rather than
+      # a MAGNOLIA= override this job would have to keep correct.
+      - name: Check out the game
+        uses: actions/checkout@v7
+        with:
+          path: makemecookies
+
+      # Tracks main rather than a pinned ref, deliberately. An engine change
+      # that breaks this game should redden this repo on the day it lands.
+      - name: Check out the engine beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/magnolia
+          path: magnolia
+
+      # GRRLIB is not a dkp-pacman package - it is built from source into the
+      # portlibs tree, and its own dependencies arrive with the image's
+      # ppc-portlibs and wii-portlibs groups. Pinned, so an upstream commit
+      # cannot turn this red on a day nobody touched it; v4.6.1 is what
+      # magnolia's own CI installs.
+      - name: install GRRLIB
+        run: |
+          git clone --depth 1 --branch v4.6.1 https://github.com/GRRLIB/GRRLIB.git /tmp/grrlib
+          make -C /tmp/grrlib/GRRLIB clean all install
+
+      - name: make
+        working-directory: makemecookies/wii
+        run: make
+
+      - name: The .dol exists
+        run: test -f makemecookies/wii/build/makemecookies.dol
