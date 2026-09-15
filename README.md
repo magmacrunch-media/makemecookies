@@ -113,6 +113,12 @@ at load time. iOS has no Ogg Vorbis decoder and every browser there is WebKit,
 so an ogg-only game is not quieter on an iPhone — it is silent. See `AGENTS.md`
 before adding or replacing a sound.
 
+
+## Support This Project
+
+If you find this useful, consider supporting its development:
+
+[![Sponsor](https://img.shields.io/badge/%E2%9D%A4_Sponsor-pink)](https://github.com/sponsors/magmacrunch-media)
 ## Licence
 
 PolyForm Noncommercial 1.0.0 — see `LICENSE`, and `NOTICE` for what is reserved
