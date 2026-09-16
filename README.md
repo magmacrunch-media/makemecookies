@@ -119,6 +119,7 @@ before adding or replacing a sound.
 If you find this useful, consider supporting its development:
 
 [![Sponsor](https://img.shields.io/badge/%E2%9D%A4_Sponsor-pink)](https://github.com/sponsors/magmacrunch-media)
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-blue)](https://www.paypal.biz/magmacrunchmedia)
 ## Licence
 
 PolyForm Noncommercial 1.0.0 — see `LICENSE`, and `NOTICE` for what is reserved
