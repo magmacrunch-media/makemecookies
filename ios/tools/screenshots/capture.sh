@@ -68,7 +68,14 @@ xcrun simctl install "$D" "$STAGED"
 xcrun simctl status_bar "$D" override --time "9:41" --batteryState charged \
   --batteryLevel 100 --cellularMode active --cellularBars 4 --wifiMode active --wifiBars 3
 
-# Rotate to landscape before launching, so the app never lays out portrait.
+# Rotate the simulator to landscape, so the DEVICE frame matches the app.
+#
+# This fails over SSH and says so: "osascript is not allowed to send
+# keystrokes", because System Events needs accessibility permission granted to
+# whatever drives it, and a remote shell has none. Left in because it works
+# from the Mac's own terminal, and harmless when it does not: the app is
+# landscape-locked, so it lays out correctly either way and only the device
+# frame is portrait. The step after the shots fixes that case.
 osascript -e 'tell application "Simulator" to activate' \
           -e 'tell application "System Events" to key code 124 using command down' || true
 sleep 1
@@ -85,8 +92,19 @@ shoot 8  5-bests
 
 xcrun simctl terminate "$D" "$BUNDLE" 2>/dev/null || true
 
-# The first thing to check: landscape means width greater than height. If these
-# come back portrait, the rotation step did nothing and the shots are of the
-# wrong layout, whatever else looks right.
+# If the device frame stayed portrait, the app is still landscape inside it:
+# the pixels are right and the image is on its side. Rotating the file is the
+# honest fix -- nothing is redrawn, resampled or recomposited, and the result
+# is the same frame the right way up. 270 clockwise brings the right edge,
+# where the HUD sits, to the top.
+W=$(sips -g pixelWidth "$OUT"/1-title.png | awk '/pixelWidth/{print $2}')
+H=$(sips -g pixelHeight "$OUT"/1-title.png | awk '/pixelHeight/{print $2}')
+if [ "$W" -lt "$H" ]; then
+  echo "  device frame came back portrait; rotating ${W}x${H} to landscape"
+  for f in "$OUT"/*.png; do sips -r 270 "$f" >/dev/null; done
+fi
+
+# Landscape means width greater than height. Whatever else looks right, if this
+# prints a portrait pair the shots are of the wrong layout.
 sips -g pixelWidth -g pixelHeight "$OUT"/1-title.png | tail -2
 ls "$OUT"
