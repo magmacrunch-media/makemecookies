@@ -483,6 +483,10 @@ function setupListeners() {
     if (finished) toTitle(); else resumeFromModal();
   });
   wire('btn-credits', () => { showModal('modal-credits'); pauseForModal(); });
+  // The same panel from the title card. pauseForModal and resumeFromModal are
+  // both guarded by `running`, so they do nothing before a shift has started
+  // and the one handler serves both entrances.
+  wire('btn-credits-title', () => { showModal('modal-credits'); pauseForModal(); });
   wire('btn-close-credits', () => {
     hideModal('modal-credits');
     if (finished) toTitle(); else resumeFromModal();

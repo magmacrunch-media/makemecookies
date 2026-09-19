@@ -264,9 +264,10 @@
   min-height: 11px;
 }
 
-/* The rules open FROM the title card, which is z-index 8000, so this has to
-   sit above it or the panel appears behind the thing that opened it. */
-#modal-rules { z-index: 8500; }
+/* These open FROM the title card, which is z-index 8000, so they have to sit
+   above it or the panel appears behind the thing that opened it. */
+#modal-rules,
+#modal-credits { z-index: 8500; }
 
 #modal-rules .modal { max-width: 520px; text-align: left; }
 

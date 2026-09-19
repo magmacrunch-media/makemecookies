@@ -331,6 +331,17 @@ edit(state, 'let the viewport reach the notch', (html) =>
   )
 );
 
+// Before the transform below, deliberately: that one turns every outbound
+// link into one that opens Safari, and this mark is the one link that must not
+// be tappable at all. A player who has not clocked in yet should not be one
+// mis-tap away from a website.
+edit(state, 'unlink the title screen publisher mark', (html) =>
+  html.replace(
+    /<a class="title-publisher-link" href="https:\/\/magmacrunch\.com">([\s\S]*?)<\/a>/,
+    '<span class="title-publisher-link">$1</span>'
+  )
+);
+
 edit(state, 'open outbound links in the system browser', (html) =>
   html.replace(/<a href="(https?:\/\/[^"]+)"/g, '<a href="$1" target="_blank" rel="noopener"')
 );

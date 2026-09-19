@@ -21,8 +21,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css?v=abf25d69">
 <link rel="stylesheet" href="css/layout.css?v=d8e37fcb">
-<link rel="stylesheet" href="css/modals.css?v=0c4fbeeb">
-<link rel="stylesheet" href="css/title.css?v=d98975fd">
+<link rel="stylesheet" href="css/modals.css?v=92038100">
+<link rel="stylesheet" href="css/title.css?v=c5707591">
 
 </head>
 <body>
@@ -104,7 +104,6 @@
       <span class="echo e4">MAKEMECOOKIES!</span>
     </div>
     <div class="title-sub">a magmacrunch media cookie factory</div>
-    <div class="title-song">song: &ldquo;makemecookies! x4.&rdquo; by Jimmi &mdash; 0:51</div>
   </div>
 
   <div class="title-line"></div>
@@ -112,8 +111,20 @@
   <div class="title-buttons">
     <button class="btn" id="btn-start-title">CLOCK IN</button>
     <button class="btn mint" id="btn-how-to-play">HOW TO PLAY</button>
+    <button class="btn gold" id="btn-credits-title">CREDITS</button>
   </div>
   <div class="title-hint">or press space</div>
+
+  <!-- The publisher, quietly, at the foot of the card. A link on the web and
+       plain text in the app: package.mjs unlinks it, because an outbound link
+       on the first screen would send a player to Safari before they have
+       played anything. -->
+  <div class="title-publisher">
+    <a class="title-publisher-link" href="https://magmacrunch.com">
+      <img class="title-publisher-mark" src="img/mc-logo.png" alt="" width="26" height="32">
+      <span>magmacrunch media</span>
+    </a>
+  </div>
 </div>
 
 <!-- ── How to play ─────────────────────────────────── -->
@@ -273,7 +284,7 @@
 <script src="js/stations.js?v=f76edefe"></script>
 <script src="js/render.js?v=dbee2dcc"></script>
 <script src="js/moments.js?v=e78359c7"></script>
-<script src="js/main.js?v=211571a7"></script>
+<script src="js/main.js?v=e99ab77a"></script>
 
 <link rel="stylesheet" href="../shared/chat-widget.css?v=21d22238">
 <script src="../shared/adenosine-chat.js?v=4a6b886b"></script>
