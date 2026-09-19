@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy manifest. Every app uploaded to App Store Connect needs one, and the
+  aggregate of this file and every bundled framework's own is what Apple checks.
+  Confirm the aggregate with Product > Archive > Generate Privacy Report before
+  an upload rather than trusting this file alone.
+
+  All four answers are the empty one, and each is a claim about the binary:
+
+  - NSPrivacyTracking false, NSPrivacyTrackingDomains empty: the app contacts
+    nothing. package.mjs fails the build on any asset fetched over http(s), and
+    it replaces ScoreClient().auto(MC_SCORE_OPTS) with an unconnected client, so
+    there is no network code left to track anybody with.
+  - NSPrivacyCollectedDataTypes empty: nothing is collected. What the game keeps
+    stays in localStorage on the device.
+  - NSPrivacyAccessedAPITypes empty. The one most guides get wrong is
+    NSPrivacyAccessedAPICategoryUserDefaults, which is required when *your*
+    binary or a bundled SDK calls NSUserDefaults. localStorage in a WKWebView is
+    WebKit's own store and WebKit is a system framework; @capacitor/ios contains
+    no UserDefaults call and ships its own manifest declaring none. This app
+    bundles no other plugin at all, not even @capacitor/haptics, so there is
+    nothing else to aggregate. Adding @capacitor/preferences, or anything that
+    writes UserDefaults from Swift, changes that, and so does adding file
+    timestamp, disk space or system boot time APIs.
+
+  Unlike george-boole there is **no human-readable privacy page yet**.
+  App Store Connect requires one per app, so magmacrunch.com/privacy/makemecookies/
+  has to exist before submission, and once it does the two must stay in step.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

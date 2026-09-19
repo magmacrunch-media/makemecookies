@@ -1,0 +1,11 @@
+{
+  "appId": "com.magmacrunch.makemecookies",
+  "appName": "makemecookies!x4",
+  "webDir": "www",
+  "ios": {
+    "path": "App",
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "backgroundColor": "#180C18"
+  }
+}

@@ -115,3 +115,150 @@ jobs:
 
       - name: The .dol exists
         run: test -f makemecookies/wii/build/makemecookies.dol
+
+  # ── the iOS port ────────────────────────────────────────────────────────────
+  #
+  # Added with step 2 of the App Store port. These matter more than the jobs
+  # above do for their versions, because **nothing in the iOS work can be
+  # verified on the dev box**, which runs Windows. package.mjs runs there; the
+  # Xcode project cannot be built or even parsed. The project was assembled by
+  # script on Windows, so the macOS job below is the first thing that has ever
+  # compiled this app.
+
+  # What package.mjs asserts about itself, on a runner with no Xcode: the SHARED
+  # allowlist, the no-op-is-fatal rule on every transform, and the final sweep
+  # for ../ paths and network assets. The website is a repo this one does not
+  # watch, and a script appearing in its shared folder is exactly the failure
+  # those guards exist for, so the bundle is built here from the website's main.
+  ios-bundle:
+    name: ios bundle
+    runs-on: ubuntu-latest
+    steps:
+      # The flat layout, findWebsite()'s second candidate (../website from the
+      # game root) and what a pair of plain clones produces, so there is no
+      # WEBSITE= override here to keep correct.
+      - name: Check out the game
+        uses: actions/checkout@v7
+        with:
+          path: makemecookies
+
+      - name: Check out the website beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/magmacrunch.com
+          path: website
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build the bundle from web/
+        working-directory: makemecookies/ios
+        run: node package.mjs
+
+      # package.mjs reports "self-contained" and this is the same claim checked
+      # independently, in case a transform is ever added without its guard.
+      - name: The bundle reaches nothing outside itself
+        working-directory: makemecookies/ios/www
+        run: |
+          if grep -rInE '(src|href)="\.\./' . ; then echo "reaches outside the bundle"; exit 1; fi
+          if grep -rInE '<(script|link|img|source|audio)[^>]*(src|href)="https?:' . ; then echo "loads over the network"; exit 1; fi
+          echo "clean"
+
+  # The vendored Game Center plugin against its upstream in engines/hypnopompia.
+  # Editing the Swift here is invisible from this repo, because a copy always
+  # verifies clean against itself, so the check runs from the shell's end with
+  # this game checked out beside it. The mirror case, a change in the shell that
+  # leaves this game stale, is caught by the same command in hypnopompia's CI.
+  ios-shared:
+    name: ios shared half
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the game where consumers.json expects it
+        uses: actions/checkout@v7
+        with:
+          path: games/makemecookies
+
+      - name: Check out the iOS shell beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/hypnopompia
+          path: engines/hypnopompia
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The strict form, which exits 2 rather than 0 when it compared nothing, so
+      # a checkout that silently failed cannot read as a pass.
+      - name: The vendored plugin matches the shell
+        working-directory: engines/hypnopompia
+        run: npm run check
+
+  # The app itself, and the only thing that has ever compiled it. The two
+  # vendored Swift files and PrivacyInfo.xcprivacy were wired into project.pbxproj
+  # by script on a machine with no Xcode, and a file the project fails to list is
+  # not a warning: GameViewController would simply not exist while
+  # Main.storyboard names it, so the app would fail at launch after building
+  # perfectly.
+  #
+  # Package.resolved is deliberately not committed yet, because only SPM on a Mac
+  # can generate it. So this job resolves capacitor-swift-pm fresh each run and
+  # may pick a version no human has tried. Commit the Package.resolved it
+  # produces once somebody has run the app on a real device.
+  ios-build:
+    name: ios build
+    runs-on: macos-latest
+    steps:
+      - name: Check out the game
+        uses: actions/checkout@v7
+        with:
+          path: makemecookies
+
+      - name: Check out the website beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/magmacrunch.com
+          path: website
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install the Capacitor CLI
+        working-directory: makemecookies/ios
+        run: npm ci
+
+      - name: Build the bundle from web/
+        working-directory: makemecookies/ios
+        run: node package.mjs
+
+      - name: Sync it into the Xcode project
+        working-directory: makemecookies/ios
+        run: npx cap sync ios
+
+      # A generic destination rather than a named simulator: nothing here boots a
+      # device, and a name that exists on the dev Mac need not exist on the runner
+      # image. Signing is off because the simulator needs none. There is no
+      # App.entitlements yet, deliberately, so nothing fails on a Game Center
+      # capability that has not been enabled for this bundle id.
+      - name: xcodebuild
+        working-directory: makemecookies/ios/App/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/derived" \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: The app was produced
+        run: test -d "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/App.app"
+
+      # Two things a successful compile does not prove on its own: that the
+      # plugin's class survived into the binary, and that the privacy manifest is
+      # in the bundle rather than only in the repo.
+      - name: GameCenterPlugin and the privacy manifest are in the app
+        run: |
+          APP="$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/App.app"
+          test -f "$APP/PrivacyInfo.xcprivacy" || { echo "PrivacyInfo.xcprivacy missing from the bundle"; exit 1; }
+          nm -a "$APP/App" | grep -q GameCenterPlugin || { echo "GameCenterPlugin not in the binary"; exit 1; }
+          echo "both present"
