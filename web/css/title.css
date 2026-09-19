@@ -45,28 +45,59 @@
 
 .title-stack { position: relative; z-index: 1; }
 
+/* The title, four times.
+   The song is "makemecookies! x4." and the card used to say the name once with
+   X4 under it, which is the arithmetic rather than the joke. Four of it, each
+   bigger and brighter than the last, is the joke: the name arriving four times
+   and landing on the fourth.
+
+   Sized in vw so all four scale together, and kept modest on purpose: a phone
+   held in landscape has about 440pt for this, the subtitle, the song credit
+   and two buttons. */
 .title-main {
   font-family: 'Press Start 2P', monospace;
-  font-size: clamp(17px, 5vw, 42px);
-  color: var(--neon);
-  text-shadow: 0 0 8px #FF2E9C, 0 0 30px rgba(255,46,156,0.5);
   letter-spacing: 2px;
-  line-height: 1.45;
+  line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.title-main .echo {
+  display: block;
+  color: var(--neon);
+  /* Each flickers a beat after the one above, so the stack reads as four
+     arrivals rather than one sign buzzing. */
   animation: sizzle 2.6s steps(1) infinite;
+}
+
+.title-main .e1 { font-size: clamp(7px, 1.7vw, 14px);  opacity: 0.32; animation-delay: 0s; }
+.title-main .e2 { font-size: clamp(10px, 2.6vw, 21px); opacity: 0.55; animation-delay: 0.18s; }
+.title-main .e3 {
+  font-size: clamp(13px, 3.6vw, 30px);
+  opacity: 0.78;
+  text-shadow: 0 0 6px rgba(255,46,156,0.5);
+  animation-delay: 0.36s;
+}
+
+/* The one that is actually the title: full size, full glow, and butter rather
+   than pink, which is where the X4's colour goes now the X4 is gone. */
+.title-main .e4 {
+  font-size: clamp(17px, 5vw, 42px);
+  color: var(--butter);
+  text-shadow: 0 0 10px #FFC93C, 0 0 34px rgba(255,201,60,0.45);
+  animation-delay: 0.54s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-main .echo { animation: none; }
 }
 @keyframes sizzle {
   0%, 88%, 92%, 100% { opacity: 1; }
   90%                { opacity: 0.55; }
 }
 
-.title-x4 {
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(28px, 8vw, 66px);
-  color: var(--butter);
-  text-shadow: 0 0 10px #FFC93C, 0 0 34px rgba(255,201,60,0.45);
-  letter-spacing: 6px;
-  margin-top: 10px;
-}
 
 .title-sub {
   font-size: 13px;
@@ -144,4 +175,15 @@
 /* "or press space" is a lie on a phone. */
 @media (hover: none) and (pointer: coarse) {
   .title-hint { display: none; }
+}
+
+/* Two buttons where there was one. The rules moved into their own panel:
+   a title card that explains five stations before you have seen any of them
+   is a wall of text at the moment a player has the least reason to read it,
+   and the same five labels are on the touchpad and the legend during play. */
+.title-buttons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
 }

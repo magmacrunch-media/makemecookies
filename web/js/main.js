@@ -282,6 +282,25 @@ function endShift() {
 }
 
 /**
+ * The rules panel, opened from the title card.
+ *
+ * The star line is built from STARS rather than written into the markup: it is
+ * the only sentence in the game's own words that carries a number the bench
+ * can move, and a rules screen quoting the wrong one is worse than a rules
+ * screen that does not mention them.
+ *
+ * Opening it does not start or pause anything. The title card is still up
+ * behind it, and the shift has not begun.
+ */
+function showRules() {
+  const line = document.getElementById('rules-stars');
+  if (line) {
+    line.textContent = STARS.map((n, i) => '*'.repeat(i + 1) + ' ' + n).join('   ');
+  }
+  showModal('modal-rules');
+}
+
+/**
  * The stars, and what they are called.
  *
  * Built as elements rather than a string of asterisks so the earned ones can
@@ -438,6 +457,8 @@ function wire(id, fn) {
 
 function setupListeners() {
   wire('btn-start-title', () => dismissTitle());
+  wire('btn-how-to-play', () => showRules());
+  wire('btn-close-rules', () => hideModal('modal-rules'));
   wire('btn-pause', () => togglePause());
   wire('btn-resume', () => togglePause());
   wire('btn-quit', () => toTitle());
@@ -517,6 +538,20 @@ function dismissTitle() {
     if (!to || to.style.display === 'none') return;
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+    // The rules open over the title card, so while they are up the keys the
+    // card owns belong to the panel: space would otherwise clock in behind it,
+    // and Escape would do nothing at all. On a phone held in landscape the
+    // CLOSE button can be below the fold, which makes Escape the way out.
+    const rules = document.getElementById('modal-rules');
+    if (rules && !rules.classList.contains('hidden')) {
+      if (e.key === 'Escape' || e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        hideModal('modal-rules');
+      }
+      return;
+    }
+
     if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       dismissTitle();

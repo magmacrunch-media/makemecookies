@@ -263,3 +263,49 @@
   margin-bottom: 6px;
   min-height: 11px;
 }
+
+/* The rules open FROM the title card, which is z-index 8000, so this has to
+   sit above it or the panel appears behind the thing that opened it. */
+#modal-rules { z-index: 8500; }
+
+#modal-rules .modal { max-width: 520px; text-align: left; }
+
+.rules-lead {
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--text);
+  margin: 10px 0 14px;
+}
+
+.rules-list {
+  margin: 0 0 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+.rules-list dt {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--sprinkle);
+  white-space: nowrap;
+}
+.rules-list dt b {
+  display: inline-block;
+  min-width: 14px;
+  color: var(--butter);
+}
+.rules-list dd {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.6;
+  color: var(--subtext);
+}
+
+.rules-note {
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--subtext);
+  margin: 0 0 8px;
+}
+.rules-note b { color: var(--neon); }

@@ -21,8 +21,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css?v=abf25d69">
 <link rel="stylesheet" href="css/layout.css?v=d8e37fcb">
-<link rel="stylesheet" href="css/modals.css?v=68b99f63">
-<link rel="stylesheet" href="css/title.css?v=3953ebdd">
+<link rel="stylesheet" href="css/modals.css?v=0c4fbeeb">
+<link rel="stylesheet" href="css/title.css?v=d98975fd">
 
 </head>
 <body>
@@ -94,24 +94,62 @@
 <!-- ── Title card ─────────────────────────────────────────────────── -->
 <div id="title-overlay">
   <div class="title-stack">
-    <div class="title-main">MAKEMECOOKIES!</div>
-    <div class="title-x4">X4</div>
+    <!-- The title four times over, which is what x4 means. The first three
+         are decoration and are hidden from assistive tech, so the card still
+         announces its name once rather than stuttering it. -->
+    <div class="title-main" aria-label="makemecookies x4">
+      <span class="echo e1" aria-hidden="true">MAKEMECOOKIES!</span>
+      <span class="echo e2" aria-hidden="true">MAKEMECOOKIES!</span>
+      <span class="echo e3" aria-hidden="true">MAKEMECOOKIES!</span>
+      <span class="echo e4">MAKEMECOOKIES!</span>
+    </div>
     <div class="title-sub">a magmacrunch media cookie factory</div>
     <div class="title-song">song: &ldquo;makemecookies! x4.&rdquo; by Jimmi &mdash; 0:51</div>
   </div>
 
   <div class="title-line"></div>
 
-  <div class="title-rules">
-    <span><b>1</b>HOPPER — dump flour, don't overfill</span>
-    <span><b>2</b>MIXER — start it, then eject before it toughens</span>
-    <span><b>3</b>BELT — unstick jams and boost the line</span>
-    <span><b>4</b>OVEN — pull it golden. Mash to fight fires</span>
-    <span><b>5</b>PACK — ship the box. Four cookies pays double</span>
+  <div class="title-buttons">
+    <button class="btn" id="btn-start-title">CLOCK IN</button>
+    <button class="btn mint" id="btn-how-to-play">HOW TO PLAY</button>
   </div>
-
-  <button class="btn" id="btn-start-title">CLOCK IN</button>
   <div class="title-hint">or press space</div>
+</div>
+
+<!-- ── How to play ─────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-rules">
+  <div class="modal">
+    <h2>HOW TO PLAY</h2>
+    <div class="modal-sub">one song, one shift</div>
+
+    <p class="rules-lead">Five machines, none of them waiting for you. Tap a
+    station, or press its number.</p>
+
+    <dl class="rules-list">
+      <dt><b>1</b>HOPPER</dt>
+      <dd>Dump a sack of flour. Overfill it and it goes on the floor.</dd>
+      <dt><b>2</b>MIXER</dt>
+      <dd>Press once to start, again to eject. Leave it and the dough toughens.</dd>
+      <dt><b>3</b>BELT</dt>
+      <dd>Unstick a jam and boost the line.</dd>
+      <dt><b>4</b>OVEN</dt>
+      <dd>Pull the tray golden, not after. Mash to put out a fire.</dd>
+      <dt><b>5</b>PACKING</dt>
+      <dd>Ship the box. Four cookies pays double.</dd>
+    </dl>
+
+    <p class="rules-note"><b>RUSH</b> lands four times, on the music. The belt
+    speeds up and every box scores double.</p>
+    <p class="rules-note"><b>MESS</b> builds from spills, burnt trays and
+    fires. Fill the meter and the inspector freezes the line while the song
+    plays on.</p>
+    <p class="rules-note"><b>NO LOSING.</b> The shift ends with the song, and
+    is scored on what you shipped: <span id="rules-stars">&nbsp;</span></p>
+
+    <div class="controls">
+      <button class="btn mint" id="btn-close-rules">CLOSE</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── End of shift ───────────────────────────────────────────────── -->
@@ -235,7 +273,7 @@
 <script src="js/stations.js?v=f76edefe"></script>
 <script src="js/render.js?v=dbee2dcc"></script>
 <script src="js/moments.js?v=e78359c7"></script>
-<script src="js/main.js?v=f105f252"></script>
+<script src="js/main.js?v=211571a7"></script>
 
 <link rel="stylesheet" href="../shared/chat-widget.css?v=21d22238">
 <script src="../shared/adenosine-chat.js?v=4a6b886b"></script>
