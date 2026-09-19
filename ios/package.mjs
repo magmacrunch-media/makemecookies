@@ -42,14 +42,37 @@
  * different hat, which is why a no-op is also fatal.
  */
 
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const IOS = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(IOS, '..');
-const WEB = join(REPO, 'web');
-const OUT = join(IOS, 'www');
+
+// The shared half of this script lives in engines/hypnopompia, resolved by path
+// the way the Wii Makefiles resolve magnolia: $HYPNOPOMPIA, then ../hypnopompia,
+// then ../../engines/hypnopompia. There is no npm package and no junction for
+// games/, so this is the lookup, and it fails by name rather than by a module
+// error three frames deep.
+const SHELL = [
+  process.env.HYPNOPOMPIA && resolve(process.env.HYPNOPOMPIA),
+  resolve(REPO, '..', 'hypnopompia'),
+  resolve(REPO, '..', '..', 'engines', 'hypnopompia'),
+].filter(Boolean).find((r) => existsSync(join(r, 'pipeline', 'index.mjs')));
+
+if (!SHELL) {
+  console.error('\npackage.mjs: no hypnopompia checkout found.');
+  console.error(
+    'The shared bundle pipeline lives there. Looked for pipeline/index.mjs under\n'
+    + '  $HYPNOPOMPIA, ../hypnopompia, ../../engines/hypnopompia\n'
+    + 'Set HYPNOPOMPIA=<path to the hypnopompia checkout> to look elsewhere.'
+  );
+  process.exit(1);
+}
+
+const { createBuild, transforms } = await import(
+  pathToFileURL(join(SHELL, 'pipeline', 'index.mjs')).href
+);
 
 /**
  * Files in `web/` that exist for developing the browser version and have no
@@ -129,87 +152,16 @@ const FONTS = ['PressStart2P-Regular.woff2', 'PressStart2P-Regular.ttf'];
  */
 const SHIMS = ['gamekit.js', 'haptics.js'];
 
-function die(msg, detail) {
-  console.error(`\npackage.mjs: ${msg}`);
-  if (detail) console.error(detail);
-  process.exit(1);
-}
-
-/**
- * Find a website checkout, the same way everything else here resolves a sibling
- * repo: the documented flat layout first, then the grouped tree, with an env
- * override for anywhere else. Mirrors the Wii Makefile's MAGNOLIA.
- */
-function findWebsite() {
-  const roots = [];
-  if (process.env.WEBSITE) roots.push(resolve(process.env.WEBSITE));
-  roots.push(resolve(REPO, '..', 'website'));
-  roots.push(resolve(REPO, '..', '..', 'web', 'website'));
-  const found = roots.find((r) => existsSync(join(r, 'arcade', 'shared', 'adenosine-rpg.js')));
-  if (!found) {
-    die(
-      'no website checkout found.',
-      `The shared arcade scripts and the self-hosted fonts live there, not in this repo.\nLooked in:\n${roots.map((r) => `  ${r}`).join('\n')}\nSet WEBSITE=<path to the magmacrunch.com checkout> to look elsewhere.`
-    );
-  }
-  return found;
-}
-
-/** Apply one named edit to a file in `www/` other than the page, no-op fatal. */
-function editFile(rel, name, fn) {
-  const p = join(OUT, rel);
-  if (!existsSync(p)) die(`the "${name}" step has nothing to edit: ${rel} is not in the bundle.`);
-  const before = readFileSync(p, 'utf8');
-  const after = fn(before);
-  if (after === before) {
-    die(
-      `the "${name}" step matched nothing.`,
-      `web/${rel} no longer looks the way this script expects. That is not\nnecessarily a problem with the file -- but it means the bundle would be\nbuilt on an assumption that has stopped being true, so it stops here.`
-    );
-  }
-  writeFileSync(p, after);
-  return name;
-}
-
-/** Apply one named edit to the page, and fail if it changed nothing. */
-function edit(state, name, fn) {
-  const next = fn(state.html);
-  if (next === state.html) {
-    die(
-      `the "${name}" step matched nothing.`,
-      'web/index.html no longer looks the way this script expects. That is not\nnecessarily a problem with the page -- but it means the bundle would be\nbuilt on an assumption that has stopped being true, so it stops here.'
-    );
-  }
-  state.html = next;
-  state.applied.push(name);
-}
-
-const website = findWebsite();
-const shared = join(website, 'arcade', 'shared');
-const siteFonts = join(website, 'fonts');
+// `adenosine-rpg.js` is this game's engine, and probing for it rather than for
+// any shared file is what stops a website checkout that cannot build this game
+// from being accepted as one that can.
+const build = createBuild({ ios: IOS, probe: 'adenosine-rpg.js' });
+const { OUT, die, edit, editFile } = build;
+const website = build.website;
 
 // ── copy web/ ────────────────────────────────────────────────────────────────
 
-rmSync(OUT, { recursive: true, force: true });
-mkdirSync(OUT, { recursive: true });
-
-// The song ships twice, .ogg and .mp3. iOS has no Ogg Vorbis decoder and every
-// browser on iOS is WebKit, so the .ogg is bytes this bundle can never decode.
-// Safe to drop *only* here, and only because the runtime is WebKit by definition;
-// `web/` keeps both, since it is served to Firefox too, where the ogg is the file
-// almost everyone receives.
-let oggDropped = 0;
-cpSync(WEB, OUT, {
-  recursive: true,
-  filter: (src) => {
-    const rel = relative(WEB, src).split('\\').join('/');
-    if (rel.endsWith('.ogg')) {
-      oggDropped += 1;
-      return false;
-    }
-    return rel === '' || !EXCLUDE.has(rel);
-  },
-});
+const oggDropped = build.copyWeb({ exclude: EXCLUDE, drop: (rel) => rel.endsWith('.ogg') });
 
 if (!oggDropped) {
   die(
@@ -240,19 +192,11 @@ editFile('js/main.js', 'reduce MUSIC_SOURCES to the mp3', (js) =>
   )
 );
 
-const indexPath = join(OUT, 'index.html');
-const state = { html: readFileSync(indexPath, 'utf8'), applied: [] };
+const state = build.openPage();
 
-// ── what the page asks for, checked against the allowlist ────────────────────
+// ── what the page asks for, checked against the allowlist ────────────────
 
-const asked = [...state.html.matchAll(/\.\.\/shared\/([A-Za-z0-9._-]+)/g)].map((m) => m[1]);
-const unknown = [...new Set(asked)].filter((f) => !(f in SHARED));
-if (unknown.length) {
-  die(
-    `web/index.html names ${unknown.length} shared file(s) this script does not know about:`,
-    `${unknown.map((f) => `  ../shared/${f}`).join('\n')}\n\nDecide what each one is and add it to SHARED as 'vendor' or 'drop'.\nRefusing to guess: vendoring an unread script could ship anything the\narcade picked up, and dropping it silently could break the game.`
-  );
-}
+build.checkAllowlist(state, SHARED);
 
 // ── transforms ───────────────────────────────────────────────────────────────
 
@@ -281,13 +225,7 @@ edit(state, 'unconnect ScoreClient', (html) =>
 // the ScoreClient bootstrap rather than js/main.js, because a shim has to be
 // listening before main.js can dispatch anything and script order is the only
 // thing guaranteeing that.
-edit(state, 'load the app-only shims', (html) =>
-  html.replace(
-    /(<script>const scoreClient = new AdScore\.ScoreClient\(\)[^<]*<\/script>)/,
-    (_, bootstrap) =>
-      `${bootstrap}\n` + SHIMS.map((f) => `<script src="shim/${f}"></script>`).join('\n')
-  )
-);
+transforms.loadShims(build, state, SHIMS);
 
 // Both of them: the arcade root and the category crumb. Neither exists in a
 // bundle, and a dead link on the title screen is the kind of thing a reviewer
@@ -320,16 +258,11 @@ edit(state, 'self-host Press Start 2P and drop the CDN', (html) =>
     )
 );
 
-edit(state, 'point shared assets at the bundle', (html) => html.replace(/\.\.\/shared\//g, 'shared/'));
+transforms.pointSharedAssets(build, state);
 
-edit(state, 'strip cache-buster stamps', (html) => html.replace(/\?v=[0-9a-f]{8}/g, ''));
+transforms.stripStamps(build, state);
 
-edit(state, 'let the viewport reach the notch', (html) =>
-  html.replace(
-    /(<meta name="viewport" content="[^"]*?)(">)/,
-    (_, head, tail) => (head.includes('viewport-fit') ? _ : `${head}, viewport-fit=cover${tail}`)
-  )
-);
+transforms.viewportNotch(build, state);
 
 // Before the transform below, deliberately: that one turns every outbound
 // link into one that opens Safari, and this mark is the one link that must not
@@ -342,9 +275,7 @@ edit(state, 'unlink the title screen publisher mark', (html) =>
   )
 );
 
-edit(state, 'open outbound links in the system browser', (html) =>
-  html.replace(/<a href="(https?:\/\/[^"]+)"/g, '<a href="$1" target="_blank" rel="noopener"')
-);
+transforms.outboundLinks(build, state);
 
 edit(state, 'let Safari run it like an app', (html) =>
   html.replace(
@@ -358,31 +289,13 @@ edit(state, 'add the iOS stylesheet', (html) =>
   html.replace(/(\r?\n)<\/head>/, '$1<link rel="stylesheet" href="css/ios.css">$1</head>')
 );
 
-writeFileSync(indexPath, state.html);
+build.writePage(state);
 
 // ── vendor what the page still needs ─────────────────────────────────────────
 
-mkdirSync(join(OUT, 'shared'), { recursive: true });
-const vendored = Object.keys(SHARED).filter((f) => SHARED[f] === 'vendor');
-for (const f of vendored) {
-  const src = join(shared, f);
-  if (!existsSync(src)) die(`shared asset missing from the website checkout: ${src}`);
-  cpSync(src, join(OUT, 'shared', f));
-}
-
-mkdirSync(join(OUT, 'shim'), { recursive: true });
-for (const f of SHIMS) {
-  const src = join(IOS, 'shim', f);
-  if (!existsSync(src)) die(`shim missing: ${src}`);
-  cpSync(src, join(OUT, 'shim', f));
-}
-
-mkdirSync(join(OUT, 'fonts'), { recursive: true });
-for (const f of FONTS) {
-  const src = join(siteFonts, f);
-  if (!existsSync(src)) die(`font missing from the website checkout: ${src}`);
-  cpSync(src, join(OUT, 'fonts', f));
-}
+const vendored = build.vendorShared(SHARED);
+build.copyShims(SHIMS);
+build.copyFonts(FONTS);
 
 writeFileSync(
   join(OUT, 'css', 'ios.css'),
@@ -462,38 +375,7 @@ button,
 
 // ── the sweep ────────────────────────────────────────────────────────────────
 
-const TEXT = /\.(html|css|js|mjs|json|txt|md)$/i;
-const offences = [];
-
-function sweep(dir) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) {
-      sweep(p);
-      continue;
-    }
-    if (!TEXT.test(name)) continue;
-    const rel = relative(OUT, p).split('\\').join('/');
-    readFileSync(p, 'utf8')
-      .split('\n')
-      .forEach((line, i) => {
-        if (/(?:src|href)\s*=\s*["']\.\.\//.test(line)) {
-          offences.push(`${rel}:${i + 1}  reaches outside the bundle: ${line.trim()}`);
-        }
-        if (/<(?:script|link|img|source|video|audio)\b[^>]*(?:src|href)\s*=\s*["']https?:/i.test(line)) {
-          offences.push(`${rel}:${i + 1}  loads an asset over the network: ${line.trim()}`);
-        }
-      });
-  }
-}
-sweep(OUT);
-
-if (offences.length) {
-  die(
-    `the bundle is not self-contained (${offences.length} problem(s)):`,
-    `${offences.map((o) => `  ${o}`).join('\n')}\n\nAn App Store build has to run with the network off -- Guideline 4.2 treats a\npage that needs a server to be useful as a web page in a wrapper. Vendor the\nasset in this script, or remove the reference in web/.`
-  );
-}
+build.sweepSelfContained();
 
 // ── report ───────────────────────────────────────────────────────────────────
 

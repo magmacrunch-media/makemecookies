@@ -161,6 +161,17 @@ jobs:
           repository: magmacrunch-media/magmacrunch.com
           path: website
 
+      # The pipeline itself lives in the shell now, resolved by path the way the
+      # Wii Makefiles resolve magnolia: `../hypnopompia` from the game root is
+      # its second candidate, so this layout needs no HYPNOPOMPIA= override
+      # either. A game that cannot find it fails by name rather than with a
+      # module error three frames deep.
+      - name: Check out the iOS shell beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/hypnopompia
+          path: hypnopompia
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -233,6 +244,17 @@ jobs:
         with:
           repository: magmacrunch-media/magmacrunch.com
           path: website
+
+      # The pipeline itself lives in the shell now, resolved by path the way the
+      # Wii Makefiles resolve magnolia: `../hypnopompia` from the game root is
+      # its second candidate, so this layout needs no HYPNOPOMPIA= override
+      # either. A game that cannot find it fails by name rather than with a
+      # module error three frames deep.
+      - name: Check out the iOS shell beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/hypnopompia
+          path: hypnopompia
 
       - uses: actions/setup-node@v7
         with:
