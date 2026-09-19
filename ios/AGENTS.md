@@ -112,9 +112,43 @@ belongs in `web/js/`; the app picks it up at the next build.
 | haptics | needs an event seam in `web/js/`; this game dispatches no `CustomEvent`s at all, unlike george-boole's `boole:*`. `@capacitor/haptics` is deliberately not installed either, so the app currently bundles no plugin from npm at all |
 | a scoreboard shim | there is no `#scoreboardModal` here, so george-boole's 237-line rebuild has nothing to attach to |
 | Game Center leaderboards and achievements | ids are permanent once created in App Store Connect, and this game has no difficulty ladder to key them on. See issue #1, which works out the shift's ceiling so thresholds can be derived rather than guessed |
-| an app icon and launch image | **worse than missing: `cap add` supplied Capacitor's own defaults**, a 1024px logo and three 2732px splashes. So this builds and archives without complaint while shipping stock Capacitor branding, which is the kind of gap that does not announce itself. Replace both before submission; george-boole's `tools/make-boole-pixel.py` is the pattern, and its lesson was to judge an icon at 60, 120 and 180px rather than at 1024 |
 | `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |
 | `App.entitlements` | see the Game Center section above |
+
+## The art is drawn by script, and was Capacitor's until 2026-09-19
+
+`cap add` supplied its own 1024px logo and three byte-identical 2732px
+splashes, and nothing in the pipeline objects to them: the project builds,
+archives and would have uploaded wearing Capacitor's branding under this game's
+name. That is the shape of gap worth naming, because it announces itself
+nowhere.
+
+| | |
+|---|---|
+| `tools/make-cookie-pixel.py` | the app icon, light and dark, plus the `Contents.json` entry pairing them |
+| `tools/make-splash.py` | the launch image, written to all three filenames Capacitor registers |
+
+Neither retypes anything. The icon parses the `PAL` table out of
+`web/js/pixels.js`, so a cookie recoloured in the game cannot leave the icon
+painting the old one, and the splash imports the icon's backdrop rather than
+copying it. The font and the publisher's mark come from the website checkout,
+found the way `package.mjs` finds it.
+
+Three things they know that are easy to learn the hard way:
+
+- **Judge an icon at 60px.** George Boole's was fine at 1024 and a murky blob
+  on a home screen, and the redraw is what put `--sheet` in both files. It
+  renders 180, 120 and 60 against a light and a dark wallpaper, masked.
+- **`scaleAspectFill` crops the launch image.** A portrait phone fills the
+  height from a square and shows a band 46% of the width; a landscape iPad
+  shows about the middle 75% of the height. Both scripts assert their art fits
+  inside those bands and refuse to write anything wider, because the asset
+  catalog previews the full square and would show you a wordmark that is
+  cropped in half on every phone.
+- **The same colours read differently at different coverage.** The icon is
+  mostly cookie so its ground shows only where the gradient has fallen away;
+  the splash is all ground, and the icon's stops came out as hot pink across a
+  whole screen. The splash carries its own, darker.
 
 ## Two known divergences from the web version
 

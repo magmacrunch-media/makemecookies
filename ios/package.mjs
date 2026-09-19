@@ -431,7 +431,7 @@ console.log(`  fonts              ${FONTS.join(', ')}`);
 console.log(`  ogg left out       ${oggDropped} file(s) -- iOS decodes the mp3`);
 console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
-  `\nStep 1 only. No Xcode project, no shims, no icon yet:`
+  `\nThe bundle, the Xcode project and the art exist. Still missing:`
     + `\n  - haptics and achievements need an event seam in web/js/, which does not exist`
     + `\n  - the scoreboard shim does not apply: there is no #scoreboardModal here`
     + `\n  - leaderboard ids are undecided and permanent once created (see issue #1)`
