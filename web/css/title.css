@@ -99,13 +99,11 @@
 }
 
 
-.title-sub {
-  font-size: 13px;
-  color: var(--subtext);
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  margin-top: 16px;
-}
+/* No line under the title. It said the publisher's name above the mark that
+   says it again, and every replacement read as a tagline for a card that
+   already has four of its own name on it. The rules panel explains the game;
+   this screen only has to be it. */
+
 
 
 .title-line {
