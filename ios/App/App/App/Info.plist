@@ -65,22 +65,25 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<!-- iPad matches the phone as of 2026-09-19, and this one is taste
-	     rather than repair: portrait DID work here, with the game centred
-	     and empty bands above and below, unlike the phone where a 2.29:1
-	     board can only ever be a strip. Landscape because the line reads
-	     end to end and nothing is left over.
+	<!-- iPad keeps all four, and the reason is worth keeping because it was
+	     briefly locked to landscape and reverted the same day.
 	
-	     UIRequiresFullScreen goes with it: an iPad app that does not offer
-	     all four orientations has to opt out of multitasking, or the upload
-	     is rejected for it. That key is deprecated under the iOS 26 SDK and
-	     may be ignored in favour of resizability, so if a future upload
-	     complains about orientations the fix is to give this array all four
-	     again and let the iPad letterbox. -->
-	<key>UIRequiresFullScreen</key>
-	<true/>
+	     Under the iOS 26 SDK, UIRequiresFullScreen is deprecated and a
+	     landscape-only app on a PORTRAIT iPad is not rotated: it is shown
+	     in a landscape box with black bands above and below. A simulator
+	     capture on 2026-09-19 is what showed it. So locking bought
+	     letterboxing rather than the landscape layout it was meant to
+	     guarantee, and unlocking costs nothing: portrait on a 13-inch
+	     screen is the game centred with room around it, which is roomy
+	     rather than broken.
+	
+	     The phone is different and stays locked: there a 2.29:1 board in
+	     portrait is a strip across the top third, not a smaller version of
+	     the same thing. -->
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>

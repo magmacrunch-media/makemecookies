@@ -236,10 +236,16 @@ than height, or the shots are of the wrong layout.
 
 `Info.plist` locks iPhone to landscape as of 2026-09-19, both ways up, so the
 app opens correctly rather than relying on the player turning the phone. iPad
-keeps all four deliberately: restricting orientations there drags in the
-multitasking rules, and a 13-inch screen in portrait is roomy rather than
-broken. So the rotation in `capture.sh` is belt and braces on a phone and the
-real thing on an iPad.
+keeps all four, and that was tested rather than assumed: it was locked the same
+day and reverted within the hour, because under the iOS 26 SDK
+`UIRequiresFullScreen` is deprecated and a landscape-only app on a portrait
+iPad is **not rotated** -- it is shown in a landscape box with black bands
+above and below. The simulator capture is what showed it. Locking bought
+letterboxing rather than the layout it was meant to guarantee.
+
+So iPad screenshots are portrait, 2064x2752, full bleed and needing no
+rotation at all. The phone's are landscape and do need it, which is what the
+rest of this section is about.
 
 The five frames, and why each: the title card, the line mid-shift inside a
 RUSH window, the oven alight, the end-of-shift card at three stars, and the
