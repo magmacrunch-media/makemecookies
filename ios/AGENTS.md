@@ -234,9 +234,12 @@ for rotation, so it goes through the Simulator's own menu command. The script
 prints the pixel dimensions at the end for exactly that reason. Width greater
 than height, or the shots are of the wrong layout.
 
-Locking `Info.plist` to landscape on iPhone would remove the rotation step and
-fix the first launch as well. Not done, because it is a product decision about
-how the app opens rather than a screenshot problem.
+`Info.plist` locks iPhone to landscape as of 2026-09-19, both ways up, so the
+app opens correctly rather than relying on the player turning the phone. iPad
+keeps all four deliberately: restricting orientations there drags in the
+multitasking rules, and a 13-inch screen in portrait is roomy rather than
+broken. So the rotation in `capture.sh` is belt and braces on a phone and the
+real thing on an iPad.
 
 The five frames, and why each: the title card, the line mid-shift inside a
 RUSH window, the oven alight, the end-of-shift card at three stars, and the

@@ -21,12 +21,12 @@
 # written, which is why it rotates rather than shooting what the simulator
 # opens with.
 #
-# There is no `simctl` verb for rotation, so it goes through the Simulator
-# app's own menu command. That is the one step here that can silently do
-# nothing, which is why the script shoots the title card only AFTER rotating
-# and why the first thing to check in the output is that it is wider than it
-# is tall. If ios/App/App/App/Info.plist is ever locked to landscape, delete
-# this step: the app will already open the right way round.
+# Info.plist locks iPhone to landscape, so on a phone the app already opens the
+# right way round and the rotation below is belt and braces. iPad still allows
+# all four, so it is the one that needs it. There is no `simctl` verb for
+# rotation and it goes through the Simulator app's own menu command, which can
+# silently do nothing -- hence the pixel dimensions printed at the end. Wider
+# than it is tall, or the shots are of the wrong layout.
 #
 # The staging script is injected into a COPY of the built app, so nothing in
 # the checkout or the real bundle is touched. It drives the real UI, so the

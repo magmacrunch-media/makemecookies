@@ -183,7 +183,8 @@ this answers it before it is raised, in the reviewer's own terms.
     Native integration: Game Center for the leaderboard and achievements, the
     Taptic Engine for feedback on every box shipped, spill, oven fire and
     end-of-shift whistle, and a safe-area layout that keeps the controls and
-    the buttons clear of the notch and the home indicator.
+    the buttons clear of the notch and the home indicator. iPhone is landscape
+    only, either way up; iPad rotates freely.
 
     Game Center is optional. The game is identical if you decline the sign-in
     prompt; best shifts are then kept on the device only, so there is no need

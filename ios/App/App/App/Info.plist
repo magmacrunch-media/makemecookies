@@ -53,9 +53,15 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- iPhone is landscape only. The board is 960x420: in portrait it sits in
+	     a band across the top third with two thirds of the screen empty, which
+	     is a worse first launch than it is a screenshot problem. Both landscape
+	     orientations, so the device can be held either way up.
+	     iPad is deliberately left with all four: restricting orientations there
+	     drags in the multitasking rules, and a 13-inch screen in portrait is
+	     merely roomy rather than broken. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
