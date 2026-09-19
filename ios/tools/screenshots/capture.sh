@@ -5,7 +5,7 @@
 #   xcodebuild -project ios/App/App/App.xcodeproj -scheme App \
 #     -sdk iphonesimulator -derivedDataPath ~/Library/Developer/mmc-derived build
 #   mkdir -p ~/mmc-shots && cp ios/tools/screenshots/shots.js ~/mmc-shots/
-#   bash ios/tools/screenshots/capture.sh <device-udid> iphone-6.9
+#   bash ios/tools/screenshots/capture.sh <device-udid> iphone-6.9 [270|90]
 #
 # App Store Connect wants one 6.9" iPhone size and, because the app is
 # universal, one 13" iPad size. iPhone 17 Pro Max gives 1320x2868 and iPad
@@ -41,6 +41,10 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
 D="$1"
 NAME="$2"
+# Clockwise degrees to rotate a portrait frame holding a landscape-locked app.
+# 270 or 90; see the note beside the rotation below for why this is not decided
+# for you.
+ROT="${3:-270}"
 APP=~/Library/Developer/mmc-derived/Build/Products/Debug-iphonesimulator/App.app
 OUT=~/mmc-shots/"$NAME"
 BUNDLE=com.magmacrunch.makemecookies
@@ -116,9 +120,15 @@ W=$(sips -g pixelWidth "$OUT"/1-title.png | awk '/pixelWidth/{print $2}')
 H=$(sips -g pixelHeight "$OUT"/1-title.png | awk '/pixelHeight/{print $2}')
 if [ "$W" -lt "$H" ]; then
   if [ "$PORTRAIT_OK" -eq 0 ]; then
+    # Which of the two landscape orientations the app lands in is not ours to
+    # choose and not visible from here: a run can come back either way up, and
+    # one did. So the direction is an argument with a default, and the script
+    # says so rather than implying it knew. Look at the result; if it is upside
+    # down, re-run with 90.
     echo "  device frame came back portrait and the app is landscape-locked;"
-    echo "  rotating ${W}x${H} to landscape"
-    for f in "$OUT"/*.png; do sips -r 270 "$f" >/dev/null; done
+    echo "  rotating ${W}x${H} by ${ROT} degrees clockwise"
+    echo "  CHECK IT IS THE RIGHT WAY UP -- if not, re-run with 90 as the third argument"
+    for f in "$OUT"/*.png; do sips -r "$ROT" "$f" >/dev/null; done
   else
     echo "  WARNING: these are PORTRAIT layouts, not landscape ones lying down."
     echo "  $ORIENT_KEY allows portrait, so the app laid out portrait and"
