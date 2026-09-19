@@ -111,7 +111,7 @@ belongs in `web/js/`; the app picks it up at the next build.
 |---|---|
 | the App Store Connect entries | `shim/gamekit.js` reports to one leaderboard and eight achievements that **do not exist yet**. Creating them, and the Game Center capability itself, needs the paid membership. The ids are below and are permanent once created |
 | a scoreboard rebuild | george-boole rebuilds its scoreboard modal inside the app; this game's is four columns and a close button, so the shim injects one GAME CENTER button into it instead |
-| `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |
+| `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. The two URLs App Store Connect requires now exist: `magmacrunch.com/privacy/makemecookies/` and `magmacrunch.com/support/makemecookies/`, written 2026-09-19 |
 | `App.entitlements` | see the Game Center section above |
 
 ## The art is drawn by script, and was Capacitor's until 2026-09-19
