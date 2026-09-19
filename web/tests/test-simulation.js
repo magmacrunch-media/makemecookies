@@ -89,6 +89,7 @@ const CONSTANTS = [
     'TRAY_CAP', 'BOX_MS', 'BOX_MULT', 'VALUE', 'MESS', 'INSPECT_MS',
     'INSPECT_RESET', 'RAMP', 'LEAK_STARTS_AT', 'RUSH_AT', 'RUSH_MS', 'RUSH_BELT',
     'RUSH_SCORE', 'CLEAN_BONUS', 'TIDY_BONUS', 'SHIFT_MS_FALLBACK',
+    'STARS', 'STAR_LABELS',
     'smoothstep', 'lerp', 'clamp01', 'PRESS',
 ];
 
@@ -450,6 +451,30 @@ console.log('\nthe native seam -- what the shims are told, and how often');
     eq(burnt.length, 1, 'pulling a burnt tray reports once');
     eq(burnt[0].name, 'burnt', 'and says what it was');
     eq(burnt[0].detail.rush, true, 'a moment inside a RUSH window knows it');
+}
+
+// ── 7. Stars ────────────────────────────────────────────────────
+
+console.log('\nstars -- what a shift was worth, on the only number a player reads');
+{
+    const ctx = load();
+
+    // The boundaries, which is the whole of the function. Off by one here
+    // means a player told they missed a star they earned, and the only place
+    // that shows is a card they see once.
+    eq(ctx.starsFor(0), 0, 'shipping nothing earns no stars');
+    eq(ctx.starsFor(ctx.STARS[0] - 1), 0, 'one under the first threshold is still none');
+    eq(ctx.starsFor(ctx.STARS[0]), 1, 'the first threshold is inclusive');
+    eq(ctx.starsFor(ctx.STARS[1] - 1), 1, 'one under the second is still one');
+    eq(ctx.starsFor(ctx.STARS[1]), 2, 'the second threshold is inclusive');
+    eq(ctx.starsFor(ctx.STARS[2] - 1), 2, 'one under the third is still two');
+    eq(ctx.starsFor(ctx.STARS[2]), 3, 'the third threshold is inclusive');
+    eq(ctx.starsFor(999), 3, 'and three is the most there is');
+
+    ok(ctx.STARS.every((n, i) => i === 0 || n > ctx.STARS[i - 1]),
+       'the thresholds ascend');
+    eq(ctx.STAR_LABELS.length, ctx.STARS.length + 1,
+       'every star count has something to call it, including none');
 }
 
 // ── Results ───────────────────────────────────────────────────────────────────

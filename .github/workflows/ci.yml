@@ -36,6 +36,16 @@ jobs:
         working-directory: web/tests
         run: node test-simulation.js
 
+      # STARS in config.js is derived from this bench, so a change to the oven
+      # cycle can silently move what a star is worth: three stars could become
+      # unreachable, or one star could become something you get by standing
+      # still. Neither shows up in a test of the rules, because the rules would
+      # still be correct. A band rather than an exact number, so a tuning commit
+      # does not have to edit the check it is meant to answer to.
+      - name: The star ladder still slopes
+        working-directory: web/tests
+        run: node bench-shift.js --check
+
       # js/stations.js is the simulation and js/moments.js is what the App
       # Store shims are told. Both must stay DOM-free, or the suite above
       # stops being able to load them at all. Cheaper to assert than to

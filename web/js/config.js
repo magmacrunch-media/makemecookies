@@ -126,6 +126,39 @@ const RUSH_SCORE = 2;
 const CLEAN_BONUS  = { threshold: 20, points: 500, label: 'SPOTLESS' };
 const TIDY_BONUS   = { threshold: 50, points: 250, label: 'TIDY' };
 
+// ── Stars ───────────────────────────────────────────────────
+// What a good shift is, in cookies shipped rather than points. The count is
+// the legible number for a player deciding whether to go again; score folds
+// in the greed decision and the clean-up bonus, which reward other things.
+//
+// Derived, not guessed. web/tests/bench-shift.js plays a whole shift with a
+// simulated player on a fixed reaction budget, and each threshold is what
+// that budget buys:
+//
+//   ***  22 cookies   a ~380ms hand
+//   **   15 cookies   a ~650ms hand
+//   *     8 cookies   a ~1100ms hand
+//
+// The bot ships 30 at 140ms and the oven's theoretical ceiling is ~33, so
+// three stars is about 73% of what a perfect prioritiser manages. It never
+// plans, never holds a tray past four and never reads the HUD, so a human at
+// the same reaction time scores higher on about the same cookies -- which is
+// why the stars key on the count and the leaderboard keeps the score.
+//
+// Re-run the bench after touching bakeMs, mixMs or readyMs. The oven cycle
+// sets all three of these, and CI fails if the ladder stops sloping.
+const STARS = [8, 15, 22];
+
+// Said on the end-of-shift card, one per earned star. Zero is not a loss:
+// the game has no losing, only how much you shipped.
+const STAR_LABELS = ['CLOCKED IN', 'SHIPPED A SHIFT', 'THE LINE STAYED FED', 'HEAD BAKER'];
+
+function starsFor(cookies) {
+  let earned = 0;
+  for (const need of STARS) if (cookies >= need) earned++;
+  return earned;
+}
+
 const SHIFT_MS_FALLBACK = 51000;
 
 // ── Interpolation ────────────────────────────────────────────────────

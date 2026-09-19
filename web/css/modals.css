@@ -238,3 +238,28 @@
   word-break: break-word;
   user-select: text;
 }
+
+/* Stars on the end-of-shift card.
+   Asterisks rather than a star glyph: Press Start 2P has no U+2605 and
+   renders it as the same .notdef box every other missing character gets,
+   which is the trap the icon's gate symbols already taught. */
+.final-stars {
+  margin: 10px 0 2px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 28px;
+  letter-spacing: 10px;
+  line-height: 1;
+}
+.final-stars .star { color: var(--dim); }
+.final-stars .star.on {
+  color: var(--butter);
+  text-shadow: var(--glow-butter);
+}
+.final-rank {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--sprinkle);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  min-height: 11px;
+}

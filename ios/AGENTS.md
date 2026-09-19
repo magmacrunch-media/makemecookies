@@ -110,7 +110,7 @@ belongs in `web/js/`; the app picks it up at the next build.
 | | Why |
 |---|---|
 | a scoreboard shim | there is no `#scoreboardModal` here, so george-boole's 237-line rebuild has nothing to attach to |
-| Game Center leaderboards and achievements | ids are permanent once created in App Store Connect, and this game has no difficulty ladder to key them on. See issue #1, which works out the shift's ceiling so thresholds can be derived rather than guessed |
+| Game Center leaderboards and achievements | the thresholds exist as of 2026-09-19, so this is now a matter of creating the entries and writing one shim. See the section below for the ids, which are permanent once created |
 | `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |
 | `App.entitlements` | see the Game Center section above |
 
@@ -191,6 +191,69 @@ natively at document start, so in any static server pointed at `ios/www` the
 shim finds no plugin and returns before binding a single listener. Verified
 that way, and then verified again by re-running the real file against a stubbed
 plugin, which is the only way to see the mapping without a device.
+
+## Game Center: the ids, and what has to exist before they can be earned
+
+**Nothing here is created yet, and an id cannot be changed or reused once it
+is.** Read this against `web/js/config.js` before typing anything into App
+Store Connect.
+
+The thresholds come from `web/tests/bench-shift.js`, which plays a whole shift
+with a simulated player on a fixed reaction budget. `STARS = [8, 15, 22]`
+cookies, which that bench measures as roughly a 1100ms, a 650ms and a 380ms
+hand. CI fails if a tuning change makes three stars unreachable or one star
+free, so these numbers cannot quietly stop meaning what they say.
+
+### One leaderboard
+
+| | |
+|---|---|
+| id | `com.magmacrunch.makemecookies.shift` |
+| type | Integer, Best Score, **High to Low**, no score range |
+| name | SHIFT SCORE |
+
+Score rather than cookies, deliberately, and the split is the point: the stars
+rate the shift on cookies because that is the legible number, and the board
+ranks on score because it already folds in the greed decision that `BOX_MULT`
+rewards and the clean-up bonus. A score range would silently reject real
+scores, the same trap george-boole's eight boards avoid.
+
+### Achievements
+
+Points total 610 of App Store Connect's 1000, which leaves room for a ninth
+without re-pointing the others. That headroom is the lesson from george-boole,
+where 8 at 100 plus 300 came to exactly the cap.
+
+| id suffix | points | earned by | from |
+|---|---|---|---|
+| `shipped` | 10 | ship a box | `cookies:box` |
+| `star1` | 50 | 8 cookies in a shift | `cookies:shift-end`, `stars >= 1` |
+| `star2` | 100 | 15 cookies | `stars >= 2` |
+| `star3` | 200 | 22 cookies | `stars >= 3` |
+| `rushbox` | 50 | ship a box inside a RUSH window | `cookies:box`, `detail.rush` |
+| `fullhouse` | 50 | ship a box of four | `cookies:box`, `detail.cookies` |
+| `spotless` | 100 | finish with the SPOTLESS bonus | `cookies:shift-end` |
+| `fireout` | 50 | put out an oven fire | **nothing yet, see below** |
+
+### Two gaps in the seam, and they are small
+
+The shim that earns these does not exist, and two rows above cannot be earned
+as things stand. Worth fixing when the shim is written rather than working
+around in it, because a shim that re-derives a rule is the thing the seam was
+built to avoid:
+
+- **`fireout` has no moment.** `cookies:fire` fires when the oven catches, and
+  nothing fires when the mash puts it out. `st.tally` counts `fires` and
+  `fireMs` but not extinguishings, so there is no counter to diff either. The
+  cheapest honest fix is a counter in the rules, which means `stations.c` too.
+- **`spotless` would have to guess.** `cookies:shift-end` carries `bonus` as
+  points and `mess` as a number, so a shim could compare against
+  `CLEAN_BONUS.threshold` or against 500 points, and both are re-derivations
+  that a tuning change breaks silently. Carry the label instead.
+
+`fullhouse` looks like a third gap and is not: `detail.cookies` is how many
+cookies were in the box, and comparing it to `TRAY_CAP` is reading the config,
+not re-deriving a rule.
 
 ## Two known divergences from the web version
 

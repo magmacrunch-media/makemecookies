@@ -258,6 +258,7 @@ function endShift() {
     boxes: st.tally.boxes, perfect: st.tally.perfect,
     fires: st.tally.fires, inspections: st.inspections,
     bonus: bonus ? bonus.points : 0,
+    stars: starsFor(st.shipped),
   });
 
   AdRPG.setGameOver(true);
@@ -268,11 +269,32 @@ function endShift() {
   document.getElementById('btn-pause').style.display = 'none';
   document.getElementById('final-score').textContent = st.score.toLocaleString();
   document.getElementById('final-shipped').textContent = st.shipped;
+  showStars(st.shipped);
   document.getElementById('final-bonus').textContent =
     bonus ? bonus.label + '  +' + bonus.points : 'NO CLEAN-UP BONUS';
   document.getElementById('initials-input').value = '';
   reportShift(bonus);
   showModal('modal-gameover');
+}
+
+/**
+ * The stars, and what they are called.
+ *
+ * Built as elements rather than a string of asterisks so the earned ones can
+ * carry the glow and the rest stay dim: three characters that all look the
+ * same say nothing about how close you were.
+ */
+function showStars(cookies) {
+  const earned = starsFor(cookies);
+  const row = document.getElementById('final-stars');
+  row.textContent = '';
+  for (let i = 0; i < STARS.length; i++) {
+    const star = document.createElement('span');
+    star.className = 'star' + (i < earned ? ' on' : '');
+    star.textContent = '*';
+    row.appendChild(star);
+  }
+  document.getElementById('final-rank').textContent = STAR_LABELS[earned];
 }
 
 /**

@@ -172,6 +172,15 @@ extern const float RUSH_AT[RUSH_COUNT];
 #define TIDY_BONUS_POINTS       250
 #define TIDY_BONUS_LABEL       "TIDY"
 
+/* Stars, in cookies shipped. Derived by web/tests/bench-shift.js, which
+   plays a shift on a fixed reaction budget; see the note beside STARS in
+   web/js/config.js for what each one costs a hand. Here so the two versions
+   agree on what a good shift is, even though the Wii renderer has nothing
+   to draw them with yet. */
+#define STAR_1  8
+#define STAR_2 15
+#define STAR_3 22
+
 /* -- The shift clock -------------------------------------------------
  * On the web the song IS the clock: main.js reads music.currentTime, and the
  * length comes from the browser on `durationchange` because Ogg carries no
