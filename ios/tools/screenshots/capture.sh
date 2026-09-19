@@ -92,16 +92,40 @@ shoot 8  5-bests
 
 xcrun simctl terminate "$D" "$BUNDLE" 2>/dev/null || true
 
-# If the device frame stayed portrait, the app is still landscape inside it:
-# the pixels are right and the image is on its side. Rotating the file is the
-# honest fix -- nothing is redrawn, resampled or recomposited, and the result
-# is the same frame the right way up. 270 clockwise brings the right edge,
-# where the HUD sits, to the top.
+# A portrait frame means one of two completely different things, and rotating
+# the file is right for exactly one of them.
+#
+# Where the app is landscape-LOCKED, the game laid out landscape inside a
+# portrait device frame: the pixels are right and the image is merely on its
+# side, so rotating it is honest -- nothing is redrawn, resampled or
+# recomposited. 270 clockwise brings the right edge, where the HUD ends up, to
+# the top.
+#
+# Where the app also supports portrait, a portrait frame means it LAID OUT
+# portrait, and rotating that gives a portrait screenshot lying on its side
+# with every line of text running vertically. That happened, and it looked
+# plausible enough in a file listing to nearly ship. So the app's own
+# Info.plist decides, per device family, rather than the pixel dimensions.
+case "$NAME" in
+  ipad*) ORIENT_KEY="UISupportedInterfaceOrientations~ipad" ;;
+  *)     ORIENT_KEY="UISupportedInterfaceOrientations" ;;
+esac
+PORTRAIT_OK=$(/usr/libexec/PlistBuddy -c "Print :$ORIENT_KEY" "$APP/Info.plist" 2>/dev/null   | grep -c Portrait || true)
+
 W=$(sips -g pixelWidth "$OUT"/1-title.png | awk '/pixelWidth/{print $2}')
 H=$(sips -g pixelHeight "$OUT"/1-title.png | awk '/pixelHeight/{print $2}')
 if [ "$W" -lt "$H" ]; then
-  echo "  device frame came back portrait; rotating ${W}x${H} to landscape"
-  for f in "$OUT"/*.png; do sips -r 270 "$f" >/dev/null; done
+  if [ "$PORTRAIT_OK" -eq 0 ]; then
+    echo "  device frame came back portrait and the app is landscape-locked;"
+    echo "  rotating ${W}x${H} to landscape"
+    for f in "$OUT"/*.png; do sips -r 270 "$f" >/dev/null; done
+  else
+    echo "  WARNING: these are PORTRAIT layouts, not landscape ones lying down."
+    echo "  $ORIENT_KEY allows portrait, so the app laid out portrait and"
+    echo "  rotating them would produce sideways text. Rotate the simulator and"
+    echo "  re-run, which needs the Mac's own terminal: sending the keystroke"
+    echo "  from ssh is refused by System Events."
+  fi
 fi
 
 # Landscape means width greater than height. Whatever else looks right, if this
