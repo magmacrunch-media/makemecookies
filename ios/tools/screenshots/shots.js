@@ -53,9 +53,18 @@
     try { localScores = rows; } catch (e) {}
   }
 
-  /* One arranged frame: put the values in, stop the loop, draw once. */
+  /* One arranged frame: put the values in, stop the loop, draw once.
+
+     The pause modal is cleared first, and that is not paranoia. main.js pauses
+     the shift on visibilitychange, and an app launched by `simctl launch` is
+     not necessarily frontmost, so a capture can come back with BREAK over the
+     line. It did, on the iPad, and the frame underneath was otherwise
+     perfect. */
   function freeze(fn) {
     if (typeof st === 'undefined') return;
+    hideModal('modal-pause');
+    paused = false;
+    AdRPG.setGamePaused(false);
     fn(st);
     updateHUD();
     gameLoop.stop();
