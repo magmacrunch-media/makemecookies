@@ -109,8 +109,8 @@ belongs in `web/js/`; the app picks it up at the next build.
 
 | | Why |
 |---|---|
-| a scoreboard shim | there is no `#scoreboardModal` here, so george-boole's 237-line rebuild has nothing to attach to |
-| Game Center leaderboards and achievements | the thresholds exist as of 2026-09-19, so this is now a matter of creating the entries and writing one shim. See the section below for the ids, which are permanent once created |
+| the App Store Connect entries | `shim/gamekit.js` reports to one leaderboard and eight achievements that **do not exist yet**. Creating them, and the Game Center capability itself, needs the paid membership. The ids are below and are permanent once created |
+| a scoreboard rebuild | george-boole rebuilds its scoreboard modal inside the app; this game's is four columns and a close button, so the shim injects one GAME CENTER button into it instead |
 | `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |
 | `App.entitlements` | see the Game Center section above |
 
@@ -149,9 +149,10 @@ Three things they know that are easy to learn the hard way:
   the splash is all ground, and the icon's stops came out as hot pink across a
   whole screen. The splash carries its own, darker.
 
-## The one shim, and the only npm plugin in the app
+## The two shims, and the only npm plugin in the app
 
-`shim/haptics.js`, injected by `package.mjs` after the ScoreClient bootstrap
+`shim/gamekit.js` and `shim/haptics.js`, injected by `package.mjs` after the
+ScoreClient bootstrap
 and therefore before `js/moments.js` and `js/main.js`. Script order is the only
 thing guaranteeing a listener is registered before anything can dispatch, which
 is why the anchor is the bootstrap line rather than the game's own scripts.
@@ -192,6 +193,31 @@ natively at document start, so in any static server pointed at `ios/www` the
 shim finds no plugin and returns before binding a single listener. Verified
 that way, and then verified again by re-running the real file against a stubbed
 plugin, which is the only way to see the mapping without a device.
+
+### `shim/gamekit.js`
+
+One file where george-boole has two. That game splits scores from achievements
+because its scores half is mostly a 237-line rebuild of a scoreboard modal that
+Game Center has to sit inside; this game's scoreboard is four columns and a
+close button, so the split would be two files of preamble around thirty lines
+of work. Split it if a third iOS game arrives and this one grows a UI.
+
+It signs in once at load, submits **every** finished shift to the leaderboard,
+and awards the eight achievements from `cookies:*` events. Submitting every
+shift rather than only good ones is deliberate: Game Center keeps each player's
+best itself, so a worse shift is harmless, and the alternative makes the board a
+record of the days somebody remembered to care.
+
+The GAME CENTER button is injected into `#modal-scores` and only after sign-in
+actually succeeds, so a player who declined never sees a button that opens
+nothing. That is also the reason it is injected rather than written into
+`web/index.html`, which has no Game Center at all.
+
+One thing is read from the game rather than from an event: `TRAY_CAP`, for the
+`fullhouse` achievement. That is reading the config, not re-deriving a rule. It
+is a `const`, so it is a global lexical binding rather than a property of
+`window`, reachable by bare name only after `config.js` has run, which is why
+the read is inside the handler rather than at the top of the file.
 
 ## Game Center: the ids, and what has to exist before they can be earned
 

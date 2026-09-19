@@ -127,7 +127,7 @@ const FONTS = ['PressStart2P-Regular.woff2', 'PressStart2P-Regular.ttf'];
  * the game, which is what keeps them out of web/ and keeps the site free of a
  * Capacitor dependency.
  */
-const SHIMS = ['haptics.js'];
+const SHIMS = ['gamekit.js', 'haptics.js'];
 
 function die(msg, detail) {
   console.error(`\npackage.mjs: ${msg}`);
@@ -462,8 +462,8 @@ console.log(`  ogg left out       ${oggDropped} file(s) -- iOS decodes the mp3`)
 console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
   `\nThe bundle, the Xcode project and the art exist. Still missing:`
-    + `\n  - achievements have a seam to listen to (cookies:* from js/moments.js) but no shim yet; haptics ships`
-    + `\n  - the scoreboard shim does not apply: there is no #scoreboardModal here`
-    + `\n  - leaderboard ids are undecided and permanent once created (see issue #1)`
+    + `\n  - the leaderboard and the eight achievements are reported but do not exist in App Store Connect yet`
+    + `\n  - the Game Center capability and entitlement, which need the paid membership`
+    + `\n  - store metadata, and the privacy and support pages App Store Connect requires`
     + `\n  - Share Tech Mono falls back; see the FONTS note in this file`
 );
