@@ -109,7 +109,6 @@ belongs in `web/js/`; the app picks it up at the next build.
 
 | | Why |
 |---|---|
-| haptics | the seam exists as of 2026-09-19: `web/js/moments.js` decides what is notable and `main.js` dispatches it as `cookies:*` on `document`. What is left is the shim and `@capacitor/haptics`, which is still not installed, so the app bundles no plugin from npm at all. `package.mjs` has no `SHIMS` array yet either, unlike george-boole's |
 | a scoreboard shim | there is no `#scoreboardModal` here, so george-boole's 237-line rebuild has nothing to attach to |
 | Game Center leaderboards and achievements | ids are permanent once created in App Store Connect, and this game has no difficulty ladder to key them on. See issue #1, which works out the shift's ceiling so thresholds can be derived rather than guessed |
 | `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |
@@ -149,6 +148,49 @@ Three things they know that are easy to learn the hard way:
   mostly cookie so its ground shows only where the gradient has fallen away;
   the splash is all ground, and the icon's stops came out as hot pink across a
   whole screen. The splash carries its own, darker.
+
+## The one shim, and the only npm plugin in the app
+
+`shim/haptics.js`, injected by `package.mjs` after the ScoreClient bootstrap
+and therefore before `js/moments.js` and `js/main.js`. Script order is the only
+thing guaranteeing a listener is registered before anything can dispatch, which
+is why the anchor is the bootstrap line rather than the game's own scripts.
+
+It listens to the `cookies:*` events and reaches into nothing. That is worth
+more here than the general argument for a seam suggests: wrapping the stations
+directly would buzz on presses that did nothing, since a locked hopper and a
+full tray both answer a press by ignoring it, and a game played by mashing
+would buzz constantly for no information.
+
+| Moment | Feedback | Why |
+|---|---|---|
+| `perfect` | impact LIGHT | the most frequent thing worth feeling, so it stays under the threshold where it becomes something you notice |
+| `box` | impact MEDIUM, or notification SUCCESS inside a RUSH | a doubled box is the one the player braced for, and a notification pattern is categorically unlike an impact |
+| `burnt`, `spill` | impact HEAVY | the same class of mistake by feel, deliberately not told apart: by the time you feel it you are already looking at the station |
+| `jam` | impact MEDIUM | stops the belt rather than costing anything, so a nudge, not a thud |
+| `fire` | notification WARNING | recoverable, by mashing 4, and filling the mess meter while it burns |
+| `inspection` | notification ERROR | the only failure state, and the only moment where nothing the player does helps |
+| `shift-end` | SUCCESS with a clean-up bonus, impact HEAVY without | the bonus is the difference between a good shift and a shipped one |
+| `rush` | three MEDIUM impacts, 90ms apart | the only warning the player gets, arriving while both hands are busy; reads as a fanfare rather than one more thing going wrong |
+
+`@capacitor/haptics` 8.0.2 is the only npm plugin the app bundles. Two things
+about it are worth knowing before reading its calls:
+
+- **`HEAVY` and `SUCCESS` are not typos.** The plugin string-matches `MEDIUM`
+  and `LIGHT` for style and `WARNING` and `ERROR` for type, and anything else
+  falls through to the initial values, which are `.heavy` and `.success`. So
+  both are the documented API arriving by default rather than by comparison,
+  and passing `''` would behave identically. Spelled out for that reason.
+- **It ships no privacy manifest and needs none.** It touches no required-reason
+  API and no `UserDefaults`, checked against its Swift sources. Confirm the
+  aggregate with Product, Archive, Generate Privacy Report before an upload
+  regardless.
+
+Nothing here has a browser counterpart: `window.Capacitor.Plugins` is injected
+natively at document start, so in any static server pointed at `ios/www` the
+shim finds no plugin and returns before binding a single listener. Verified
+that way, and then verified again by re-running the real file against a stubbed
+plugin, which is the only way to see the mapping without a device.
 
 ## Two known divergences from the web version
 

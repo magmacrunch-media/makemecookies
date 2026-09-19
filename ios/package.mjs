@@ -118,6 +118,17 @@ const SHARED = {
  */
 const FONTS = ['PressStart2P-Regular.woff2', 'PressStart2P-Regular.ttf'];
 
+/**
+ * Scripts that exist only in the app.
+ *
+ * Injected after the ScoreClient bootstrap and before js/moments.js, so a
+ * listener registered at load time is in place before anything can dispatch.
+ * They listen to the `cookies:*` events main.js announces and never reach into
+ * the game, which is what keeps them out of web/ and keeps the site free of a
+ * Capacitor dependency.
+ */
+const SHIMS = ['haptics.js'];
+
 function die(msg, detail) {
   console.error(`\npackage.mjs: ${msg}`);
   if (detail) console.error(detail);
@@ -266,6 +277,18 @@ edit(state, 'unconnect ScoreClient', (html) =>
   )
 );
 
+// After the transform above, so it matches the unconnected form. The anchor is
+// the ScoreClient bootstrap rather than js/main.js, because a shim has to be
+// listening before main.js can dispatch anything and script order is the only
+// thing guaranteeing that.
+edit(state, 'load the app-only shims', (html) =>
+  html.replace(
+    /(<script>const scoreClient = new AdScore\.ScoreClient\(\)[^<]*<\/script>)/,
+    (_, bootstrap) =>
+      `${bootstrap}\n` + SHIMS.map((f) => `<script src="shim/${f}"></script>`).join('\n')
+  )
+);
+
 // Both of them: the arcade root and the category crumb. Neither exists in a
 // bundle, and a dead link on the title screen is the kind of thing a reviewer
 // taps first.
@@ -334,6 +357,13 @@ for (const f of vendored) {
   const src = join(shared, f);
   if (!existsSync(src)) die(`shared asset missing from the website checkout: ${src}`);
   cpSync(src, join(OUT, 'shared', f));
+}
+
+mkdirSync(join(OUT, 'shim'), { recursive: true });
+for (const f of SHIMS) {
+  const src = join(IOS, 'shim', f);
+  if (!existsSync(src)) die(`shim missing: ${src}`);
+  cpSync(src, join(OUT, 'shim', f));
 }
 
 mkdirSync(join(OUT, 'fonts'), { recursive: true });
@@ -432,7 +462,7 @@ console.log(`  ogg left out       ${oggDropped} file(s) -- iOS decodes the mp3`)
 console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
   `\nThe bundle, the Xcode project and the art exist. Still missing:`
-    + `\n  - haptics and achievements have a seam to listen to (cookies:* from js/moments.js), but no shims yet`
+    + `\n  - achievements have a seam to listen to (cookies:* from js/moments.js) but no shim yet; haptics ships`
     + `\n  - the scoreboard shim does not apply: there is no #scoreboardModal here`
     + `\n  - leaderboard ids are undecided and permanent once created (see issue #1)`
     + `\n  - Share Tech Mono falls back; see the FONTS note in this file`
