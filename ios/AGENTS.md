@@ -218,6 +218,41 @@ is a `const`, so it is a global lexical binding rather than a property of
 `window`, reachable by bare name only after `config.js` has run, which is why
 the read is inside the handler rather than at the top of the file.
 
+## Screenshots
+
+`tools/screenshots/` is the pair george-boole has: `shots.js` stages the app
+and `capture.sh` drives the simulator. Both run on the Mac; `shots.js` is
+injected into a copy of the built `.app`, never into the checkout and never
+into what ships.
+
+**Landscape, and that is a decision rather than a default.** The board is
+960x420. In portrait on a phone it sits in a band across the top third with
+two thirds of the screen empty, checked in a browser at 375x812 before any of
+this was written. So `capture.sh` rotates the simulator before launching, and
+that step is the one that can silently do nothing: there is no `simctl` verb
+for rotation, so it goes through the Simulator's own menu command. The script
+prints the pixel dimensions at the end for exactly that reason. Width greater
+than height, or the shots are of the wrong layout.
+
+Locking `Info.plist` to landscape on iPhone would remove the rotation step and
+fix the first launch as well. Not done, because it is a product decision about
+how the app opens rather than a screenshot problem.
+
+The five frames, and why each: the title card, the line mid-shift inside a
+RUSH window, the oven alight, the end-of-shift card at three stars, and the
+best-shifts table. The second is the one that has to sell the game.
+
+**`shots.js` freezes the render loop for each frame.** Staging values and then
+waiting means the loop advances them before the shutter: dough moves, the tray
+burns, the RUSH window closes. Each stage sets its values, stops the loop and
+calls `render()` once.
+
+It was verified before it ever reached the Mac, by serving the built bundle
+and running the real file against it with its waits shortened. That found the
+one thing worth finding: `st` is a top-level `let`, a global lexical binding
+rather than a property of `window`, the same trap that cost george-boole five
+screenshots of an empty board.
+
 ## The store text
 
 `store/metadata.md` is every App Store Connect field written out, so the
