@@ -39,7 +39,7 @@ function createShift() {
     tally: {
       perfect: 0, seconds: 0, raw: 0, burnt: 0,
       overmixed: 0, spills: 0, jams: 0, boxes: 0,
-      fires: 0, fireMs: 0, peakMess: 0,
+      fires: 0, firesOut: 0, fireMs: 0, peakMess: 0,
     },
   };
 }
@@ -231,6 +231,7 @@ function pressOven(st, T, now) {
     o.taps.push(now);
     if (o.taps.length >= FIRE_TAPS) {
       o.phase = 'empty'; o.t = 0; o.taps = [];
+      st.tally.firesOut++;
       addMess(st, MESS.fireOut);
       toast(st, 'FIRE OUT', C.ok);
     }

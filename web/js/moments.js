@@ -38,6 +38,7 @@ const MOMENT_OF = {
   spills: 'spill',
   jams: 'jam',
   fires: 'fire',
+  firesOut: 'fire-out',
   boxes: 'box',
 };
 

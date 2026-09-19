@@ -133,6 +133,13 @@
     notify('WARNING');
   });
 
+  // And the mash working. A fire is the one emergency the player can actually
+  // fix, so the fix gets a pattern of its own rather than silence: WARNING
+  // started it, SUCCESS ends it, and the pair is legible without looking.
+  on('fire-out', function () {
+    notify('SUCCESS');
+  });
+
   // The health inspector freezing the line is the only failure state in the
   // game, and the only moment where nothing the player does helps. ERROR is
   // reserved for it.

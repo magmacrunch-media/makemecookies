@@ -69,7 +69,7 @@ typedef struct {
  */
 typedef struct {
     int   graded[GRADE_COUNT];   /* indexed by Grade */
-    int   overmixed, spills, jams, boxes, fires;
+    int   overmixed, spills, jams, boxes, fires, fires_out;
     float fire_ms, peak_mess;
 } Tally;
 

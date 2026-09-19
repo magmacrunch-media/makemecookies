@@ -254,6 +254,7 @@ console.log('\nneglect — every station degrades, none of them deadlocks');
     eq(st.oven.phase, 'fire', 'two taps do not put it out');
     ctx.pressOven(st, T, c.t + 2);
     eq(st.oven.phase, 'empty', 'the third does');
+    eq(st.tally.firesOut, 1, 'and putting it out is counted');
 
     // Taps outside the window do not accumulate, or the mash would be a hold.
     ctx.loadOven(st, 'good');
@@ -442,6 +443,18 @@ console.log('\nthe native seam -- what the shims are told, and how often');
     eq(opened[0].name, 'rush', 'and says so');
     eq(ctx.momentsSince(ctx.snapshot(st), st).length, 0,
        'and does not report again while the window stays open');
+
+    // The fire going out, which had no moment until the achievement table
+    // asked for one: the rules counted fires starting and nothing counted
+    // them ending, so there was no counter to diff.
+    const burning = ctx.snapshot(st);
+    st.oven.phase = 'fire';
+    st.oven.taps = [];
+    for (let i = 0; i < ctx.FIRE_TAPS; i++) ctx.pressOven(st, ctx.tune(st), c.t + i);
+    eq(st.oven.phase, 'empty', 'three taps put the fire out');
+    const out = ctx.momentsSince(burning, st);
+    eq(out.filter((m) => m.name === 'fire-out').length, 1,
+       'and the seam reports it exactly once');
 
     // Inside the window, everything says so.
     const mid = ctx.snapshot(st);

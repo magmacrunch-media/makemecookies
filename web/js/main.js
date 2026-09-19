@@ -258,6 +258,10 @@ function endShift() {
     boxes: st.tally.boxes, perfect: st.tally.perfect,
     fires: st.tally.fires, inspections: st.inspections,
     bonus: bonus ? bonus.points : 0,
+    // The label, not just the points: a listener that compared points
+    // against 500, or mess against CLEAN_BONUS.threshold, would be
+    // re-deriving a rule that a tuning change moves without warning.
+    bonusLabel: bonus ? bonus.label : null,
     stars: starsFor(st.shipped),
   });
 
@@ -311,7 +315,8 @@ function reportShift(bonus) {
     `mixer   overmixed ${t.overmixed}   packing  boxes ${t.boxes}`,
     `belt    jams ${t.jams}   spills ${t.spills}`,
     `mess    peak ${Math.round(t.peakMess)}  final ${Math.round(st.mess)}  ` +
-      `fires ${t.fires} (${(t.fireMs / 1000).toFixed(1)}s)  inspections ${st.inspections}`,
+      `fires ${t.fires} (${(t.fireMs / 1000).toFixed(1)}s, ${t.firesOut} out)  `
+      + `inspections ${st.inspections}`,
   ];
   console.log('%c makemecookies shift ', 'background:#FF2E9C;color:#180C18', '\n' + lines.join('\n'));
 

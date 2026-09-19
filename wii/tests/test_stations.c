@@ -307,6 +307,7 @@ static void test_oven(void)
     check_int((int)st.oven.phase, (int)OVEN_FIRE, "two taps do not put it out");
     press(&st, S_OVEN);
     check_int((int)st.oven.phase, (int)OVEN_EMPTY, "the third does");
+    check_int(st.tally.fires_out, 1, "and putting it out is counted");
 
     /* It can happen again -- putting a fire out is not immunity. */
     st.oven.phase = OVEN_BURNING;

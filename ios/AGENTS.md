@@ -169,6 +169,7 @@ would buzz constantly for no information.
 | `burnt`, `spill` | impact HEAVY | the same class of mistake by feel, deliberately not told apart: by the time you feel it you are already looking at the station |
 | `jam` | impact MEDIUM | stops the belt rather than costing anything, so a nudge, not a thud |
 | `fire` | notification WARNING | recoverable, by mashing 4, and filling the mess meter while it burns |
+| `fire-out` | notification SUCCESS | the one emergency the player can actually fix, so the fix is audible in the hand: WARNING started it, SUCCESS ends it |
 | `inspection` | notification ERROR | the only failure state, and the only moment where nothing the player does helps |
 | `shift-end` | SUCCESS with a clean-up bonus, impact HEAVY without | the bonus is the difference between a good shift and a shipped one |
 | `rush` | three MEDIUM impacts, 90ms apart | the only warning the player gets, arriving while both hands are busy; reads as a fanfare rather than one more thing going wrong |
@@ -232,28 +233,28 @@ where 8 at 100 plus 300 came to exactly the cap.
 | `star3` | 200 | 22 cookies | `stars >= 3` |
 | `rushbox` | 50 | ship a box inside a RUSH window | `cookies:box`, `detail.rush` |
 | `fullhouse` | 50 | ship a box of four | `cookies:box`, `detail.cookies` |
-| `spotless` | 100 | finish with the SPOTLESS bonus | `cookies:shift-end` |
-| `fireout` | 50 | put out an oven fire | **nothing yet, see below** |
+| `spotless` | 100 | finish with the SPOTLESS bonus | `cookies:shift-end`, `detail.bonusLabel` |
+| `fireout` | 50 | put out an oven fire | `cookies:fire-out` |
 
-### Two gaps in the seam, and they are small
+### The two gaps are closed, and how
 
-The shim that earns these does not exist, and two rows above cannot be earned
-as things stand. Worth fixing when the shim is written rather than working
-around in it, because a shim that re-derives a rule is the thing the seam was
-built to avoid:
+Writing the table above turned up two achievements that could not be earned
+without a shim re-deriving a rule, which is the thing the seam exists to
+prevent. Both were fixed in the seam rather than worked around:
 
-- **`fireout` has no moment.** `cookies:fire` fires when the oven catches, and
-  nothing fires when the mash puts it out. `st.tally` counts `fires` and
-  `fireMs` but not extinguishings, so there is no counter to diff either. The
-  cheapest honest fix is a counter in the rules, which means `stations.c` too.
-- **`spotless` would have to guess.** `cookies:shift-end` carries `bonus` as
-  points and `mess` as a number, so a shim could compare against
-  `CLEAN_BONUS.threshold` or against 500 points, and both are re-derivations
-  that a tuning change breaks silently. Carry the label instead.
+- **`cookies:fire-out` now exists.** The rules counted `fires` but nothing
+  counted putting one out, so there was no counter to diff. `tally.firesOut`
+  is that counter, added to `stations.js` and to `stations.c` in the same
+  place, since the two are a line-for-line pair and a counter in one and not
+  the other is exactly the drift the pairing catches. Both host suites assert
+  it at the point they already prove the third tap works.
+- **`cookies:shift-end` carries `bonusLabel`.** It carried `bonus` as points
+  and `mess` as a number, so a listener wanting SPOTLESS would have had to
+  compare against 500 or against `CLEAN_BONUS.threshold`, both of which a
+  tuning change moves without warning.
 
-`fullhouse` looks like a third gap and is not: `detail.cookies` is how many
-cookies were in the box, and comparing it to `TRAY_CAP` is reading the config,
-not re-deriving a rule.
+The haptics shim reads the first of these already: WARNING when the oven
+catches, SUCCESS when the mash works, which is legible without looking.
 
 ## Two known divergences from the web version
 

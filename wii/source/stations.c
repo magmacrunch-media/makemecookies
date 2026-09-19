@@ -371,6 +371,7 @@ static void press_oven(Shift *st, const Tuning *T, double now)
             st->oven.phase  = OVEN_EMPTY;
             st->oven.t      = 0.0f;
             st->oven.n_taps = 0;
+            st->tally.fires_out++;
             add_mess(st, MESS_FIRE_OUT);
             toast(st, "FIRE OUT", C_OK);
         }
