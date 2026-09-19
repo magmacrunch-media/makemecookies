@@ -1,0 +1,10 @@
+{
+  "name": "makemecookies-ios",
+  "version": "0.0.0",
+  "private": true,
+  "description": "App Store build of makemecookies!x4, derived from ../web by package.mjs",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "scripts": {
+    "build": "node package.mjs"
+  }
+}
