@@ -397,6 +397,41 @@ body {
     overscroll-behavior: none;
 }
 
+/* The body padding above is right for the game screen, which is in normal
+   flow, and reaches none of the overlays: #title-overlay and .modal-overlay are
+   position: fixed against the viewport, so they are laid out as though the
+   notch and the home indicator were not there. Left alone, CLOCK IN and the
+   end-of-shift buttons sit under the home indicator on every modern iPhone.
+
+   Both are over-constrained absolutely positioned boxes -- inset: 0 with width
+   auto -- so padding shrinks the content box rather than overflowing it, which
+   is why the title card's existing 24px works and why these can simply add. */
+.modal-overlay {
+    padding:
+        var(--safe-top) var(--safe-right)
+        var(--safe-bottom) var(--safe-left);
+
+    /* An iPhone held in landscape is about as tall as the end-of-shift card,
+       and once the insets are taken out it can be shorter. A flex container
+       centring an over-tall child clips it at BOTH ends, with no way to scroll
+       back to the top, so the buttons go under the home indicator and the
+       heading goes off the top. align-items:flex-start plus margin:auto on the
+       card is the pair that centres when there is room and degrades to
+       scrolling when there is not. */
+    align-items: flex-start;
+    overflow-y: auto;
+}
+
+.modal-overlay > .modal {
+    margin: auto;
+}
+
+#title-overlay {
+    padding:
+        calc(24px + var(--safe-top)) calc(24px + var(--safe-right))
+        calc(24px + var(--safe-bottom)) calc(24px + var(--safe-left));
+}
+
 /* The board already sets these; everything else in the app wants them too, or a
    mistimed second tap zooms the page and a long press offers to copy a tile. */
 * {
