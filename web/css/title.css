@@ -157,19 +157,10 @@
   50%      { box-shadow: 0 0 22px rgba(255,46,156,0.65); }
 }
 
-.title-hint {
-  position: relative;
-  z-index: 1;
-  font-size: 10px;
-  color: var(--dim);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
-
-/* "or press space" is a lie on a phone. */
-@media (hover: none) and (pointer: coarse) {
-  .title-hint { display: none; }
-}
+/* The "or press space" hint is gone. It was already hidden on touch, so it
+   only ever spoke to a desktop browser, and with three buttons on the card it
+   read as a leftover from when there was one. Space and Enter still clock in;
+   see the keydown handler in main.js. */
 
 /* Two buttons where there was one. The rules moved into their own panel:
    a title card that explains five stations before you have seen any of them
