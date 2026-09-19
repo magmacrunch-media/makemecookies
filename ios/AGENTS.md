@@ -109,7 +109,7 @@ belongs in `web/js/`; the app picks it up at the next build.
 
 | | Why |
 |---|---|
-| haptics | needs an event seam in `web/js/`; this game dispatches no `CustomEvent`s at all, unlike george-boole's `boole:*`. `@capacitor/haptics` is deliberately not installed either, so the app currently bundles no plugin from npm at all |
+| haptics | the seam exists as of 2026-09-19: `web/js/moments.js` decides what is notable and `main.js` dispatches it as `cookies:*` on `document`. What is left is the shim and `@capacitor/haptics`, which is still not installed, so the app bundles no plugin from npm at all. `package.mjs` has no `SHIMS` array yet either, unlike george-boole's |
 | a scoreboard shim | there is no `#scoreboardModal` here, so george-boole's 237-line rebuild has nothing to attach to |
 | Game Center leaderboards and achievements | ids are permanent once created in App Store Connect, and this game has no difficulty ladder to key them on. See issue #1, which works out the shift's ceiling so thresholds can be derived rather than guessed |
 | `store/metadata.md` | needs `engines/hypnopompia/tools/check-metadata.mjs`, which is ready and takes a path. Note the privacy and support URLs App Store Connect requires do not exist for this app yet |

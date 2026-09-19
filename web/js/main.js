@@ -124,6 +124,35 @@ function updateHUD() {
   elRush.textContent = st.rush >= 0 ? 'RUSH x' + (st.rush + 1) : '';
 }
 
+// ── The native seam ──────────────────
+//
+// CustomEvents on `document`, for the shims the App Store build injects
+// and the website does not. Nothing here knows what listens: on the web
+// they are dispatched into a document that has no listeners, which costs
+// one function call at moments that already push a toast and a sprite.
+//
+// What counts as notable is decided by js/moments.js, which is DOM-free
+// and therefore testable; this end only turns its answer into events.
+//
+// There is no silent-probe guard here, unlike george-boole's seam, and
+// the reason is worth stating so nobody adds one on the strength of the
+// comparison: that game replays four moves speculatively to decide
+// whether the board is dead, so its events had to be suppressed during
+// the probe. Nothing in this game looks ahead. A moment fires once
+// because it happened once.
+
+let momentMark = null;
+
+function emit(name, detail) {
+  document.dispatchEvent(new CustomEvent('cookies:' + name, { detail }));
+}
+
+function emitMoments() {
+  if (!momentMark) return;
+  for (const m of momentsSince(momentMark, st)) emit(m.name, m.detail);
+  momentMark = snapshot(st);
+}
+
 // ── Loop ─────────────────────────────────────────────────────────────
 
 function update(dtFactor) {
@@ -151,6 +180,7 @@ function update(dtFactor) {
   }
 
   st.__T = updateShift(st, dtMs, now);
+  emitMoments();
 
   // The inspector ducks the music rather than stopping it. Idempotent, so
   // there is no transition to detect.
@@ -196,6 +226,7 @@ function startShift() {
 
   const now = performance.now();
   armShift(st, tune(st), now);
+  momentMark = snapshot(st);
 
   running = true; paused = false; finished = false;
   AdRPG.setGameStarted(true);
@@ -217,6 +248,17 @@ function endShift() {
 
   music.pause();
   const bonus = settleShift(st);
+
+  // The last moments of the shift, then the shift itself. Emitted before
+  // the modal goes up, so a shim can react while the card is still
+  // animating in rather than after the player has read it.
+  emitMoments();
+  emit('shift-end', {
+    score: st.score, shipped: st.shipped, mess: st.mess,
+    boxes: st.tally.boxes, perfect: st.tally.perfect,
+    fires: st.tally.fires, inspections: st.inspections,
+    bonus: bonus ? bonus.points : 0,
+  });
 
   AdRPG.setGameOver(true);
   AdRPG.setGameStarted(false);

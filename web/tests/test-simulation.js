@@ -95,7 +95,7 @@ const CONSTANTS = [
 function load(seed = 1) {
     const ctx = vm.createContext({ console, Math: Object.create(Math) });
     ctx.Math.random = mulberry32(seed);
-    for (const f of ['config.js', 'stations.js']) {
+    for (const f of ['config.js', 'stations.js', 'moments.js']) {
         vm.runInContext(fs.readFileSync(path.join(JS_DIR, f), 'utf8'), ctx, { filename: f });
     }
     vm.runInContext(
@@ -391,6 +391,65 @@ console.log('\nthe ramp and dt invariance');
     }
     near(at[0], at[1], 1.5, 'belt travel agrees between 16ms and 33ms steps');
     near(at[1], at[2], 4.0, 'belt travel agrees between 33ms and 100ms steps');
+}
+
+// ── 6. The native seam ─────────────────────────────────────────
+
+console.log('\nthe native seam -- what the shims are told, and how often');
+{
+    // js/moments.js decides what is notable, by diffing two snapshots of the
+    // tally the rules already keep. It is tested here rather than through
+    // main.js because main.js reaches for the DOM on sight -- and it is worth
+    // testing at all because the failure mode is a phone buzzing twice for one
+    // cookie, which nobody notices for weeks.
+    const ctx = load();
+    const c = { t: 1e6 };
+    const st = shift(ctx, c.t);
+
+    const quiet = ctx.snapshot(st);
+    run(ctx, st, c, 300);
+    eq(ctx.momentsSince(quiet, st).length, 0, 'an uneventful stretch reports nothing');
+
+    st.pack.tray = ['perfect', 'perfect', 'seconds'];
+    const before = ctx.snapshot(st);
+    ctx.pressPack(st, ctx.tune(st), c.t);
+    const boxed = ctx.momentsSince(before, st);
+
+    eq(boxed.length, 1, 'shipping a box reports exactly one moment');
+    eq(boxed[0].name, 'box', 'and it is a box');
+    eq(boxed[0].detail.count, 1, 'one box, not one per cookie');
+    eq(boxed[0].detail.cookies, 3, 'the box carries how many cookies were in it');
+    eq(boxed[0].detail.gained, st.score, 'and what it was worth');
+    eq(boxed[0].detail.rush, false, 'every moment says whether a RUSH was on');
+
+    // Two things going wrong in one frame is one thing going wrong, as far as
+    // a buzz is concerned. A shim that fired twice here would feel like a
+    // stutter; an achievement that wants the total adds the counts up.
+    const messy = ctx.snapshot(st);
+    ctx.spill(st, 100, ctx.FLOOR_Y, ctx.MESS.spill);
+    ctx.spill(st, 200, ctx.FLOOR_Y, ctx.MESS.spill);
+    const spills = ctx.momentsSince(messy, st);
+    eq(spills.length, 1, 'two spills in one frame report once');
+    eq(spills[0].detail.count, 2, 'with a count of two');
+
+    // The RUSH window is the only moment that is a transition rather than a
+    // counter, so it is the only one that can repeat every frame by mistake.
+    const calm = ctx.snapshot(st);
+    st.rush = 0;
+    const opened = ctx.momentsSince(calm, st);
+    eq(opened.length, 1, 'the RUSH window opening reports once');
+    eq(opened[0].name, 'rush', 'and says so');
+    eq(ctx.momentsSince(ctx.snapshot(st), st).length, 0,
+       'and does not report again while the window stays open');
+
+    // Inside the window, everything says so.
+    const mid = ctx.snapshot(st);
+    st.oven.phase = 'burning';
+    ctx.pressOven(st, ctx.tune(st), c.t);
+    const burnt = ctx.momentsSince(mid, st);
+    eq(burnt.length, 1, 'pulling a burnt tray reports once');
+    eq(burnt[0].name, 'burnt', 'and says what it was');
+    eq(burnt[0].detail.rush, true, 'a moment inside a RUSH window knows it');
 }
 
 // ── Results ───────────────────────────────────────────────────────────────────

@@ -432,7 +432,7 @@ console.log(`  ogg left out       ${oggDropped} file(s) -- iOS decodes the mp3`)
 console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
   `\nThe bundle, the Xcode project and the art exist. Still missing:`
-    + `\n  - haptics and achievements need an event seam in web/js/, which does not exist`
+    + `\n  - haptics and achievements have a seam to listen to (cookies:* from js/moments.js), but no shims yet`
     + `\n  - the scoreboard shim does not apply: there is no #scoreboardModal here`
     + `\n  - leaderboard ids are undecided and permanent once created (see issue #1)`
     + `\n  - Share Tech Mono falls back; see the FONTS note in this file`

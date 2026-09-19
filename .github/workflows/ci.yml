@@ -36,16 +36,19 @@ jobs:
         working-directory: web/tests
         run: node test-simulation.js
 
-      # js/stations.js is the simulation and must stay DOM-free, or the suite
-      # above stops being able to load it at all. Cheaper to assert than to
+      # js/stations.js is the simulation and js/moments.js is what the App
+      # Store shims are told. Both must stay DOM-free, or the suite above
+      # stops being able to load them at all. Cheaper to assert than to
       # rediscover the day someone reaches for getElementById.
       - name: The rules stay DOM-free
         run: |
-          if grep -nE '\b(document|window|localStorage)\b' web/js/stations.js; then
-            echo "::error file=web/js/stations.js::stations.js must not touch the DOM — the headless suite loads it without one"
-            exit 1
-          fi
-          echo "stations.js is clean"
+          for f in web/js/stations.js web/js/moments.js; do
+            if grep -nE '\b(document|window|localStorage)\b' "$f"; then
+              echo "::error file=$f::$f must not touch the DOM; the headless suite loads it without one"
+              exit 1
+            fi
+            echo "$f is clean"
+          done
 
   # The same rules again, in C. The host tests need nothing but a compiler —
   # source/stations.c is free of libogc and GRRLIB — so they run on a
