@@ -200,30 +200,24 @@ jobs:
   # the second leaves an icon that is wrong in a way nothing in the repo
   # mentions -- the game draws the new cookie, the home screen keeps the old.
   #
-  # Regenerating and diffing is the check, because it asserts the artifact
-  # rather than a stamp standing in for it. The script writes Contents.json
-  # too, so this covers the light/dark pairing as well.
+  # --check regenerates both icons and compares PIXELS against the committed
+  # PNGs, the way roblox/tools/make_atlas.py --check does in moonlight-drift.
+  # Regenerating and asking git whether anything moved is the obvious version
+  # and it is a flake: it fails the moment this runner's Pillow encodes the
+  # identical image with different compression to the one the last person had.
   ios-art:
     name: ios art
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Pillow
         run: pip install --quiet pillow
 
       - name: The icon still matches web/js/pixels.js
-        run: |
-          python ios/tools/make-cookie-pixel.py
-          if ! git diff --quiet -- ios/App/App/App/Assets.xcassets/; then
-            echo "::error::the committed app icon does not match SPR_COOKIE_BIG in web/js/pixels.js"
-            echo "Run: python ios/tools/make-cookie-pixel.py   and commit the result."
-            git diff --stat -- ios/App/App/App/Assets.xcassets/
-            exit 1
-          fi
-          echo "icon matches the table"
+        run: python ios/tools/make-cookie-pixel.py --check
 
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.
   # Editing the Swift here is invisible from this repo, because a copy always

@@ -141,6 +141,14 @@ exactly that class of drift; the shape was the half that got away. The port was
 verified by regenerating both icons and both splashes and finding the bytes
 unchanged, so this bought the guarantee and changed no art.
 
+`make-cookie-pixel.py --check` is the drift detector for that, and the `ios-art`
+job runs it on every push. The PNGs are committed artifacts, so the sprite
+moving and the icon being regenerated are two acts where they used to be one,
+and this is what notices the second being skipped. It compares **pixels, not
+bytes**, the way moonlight-drift's `make_atlas.py --check` does: regenerating
+and asking git whether anything moved fails the moment a runner's Pillow
+encodes the same image with different compression.
+
 `COOKIE_AT` is the one thing the icon still owns about the cookie: where the
 25-cell sprite sits in the 32-cell grid. It is deliberately not centred: that
 is where the computed disc's bounding box fell, and the margin around it is

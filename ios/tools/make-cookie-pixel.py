@@ -47,7 +47,7 @@ import math
 import re
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 IOS = Path(__file__).resolve().parent.parent
 REPO = IOS.parent
@@ -310,9 +310,32 @@ def write_contents(icon_dir):
     return path
 
 
+def stale(path, fresh):
+    """Is the committed PNG at `path` not the image `fresh`?
+
+    Pixels, not bytes, the same way moonlight-drift's make_atlas.py --check
+    does it. The catalog holds a committed artifact, so the obvious check is
+    to regenerate and ask git whether anything moved -- and that fails the
+    moment CI's Pillow encodes the identical image with different compression
+    to the one the last person had. Comparing what the image IS cannot go
+    wrong that way, and a re-encode that changes bytes without changing a
+    pixel is not something anybody needs telling about.
+    """
+    if not path.exists():
+        print(f"{path.relative_to(REPO)} is missing")
+        return True
+    current = Image.open(path).convert("RGB")
+    if current.size != fresh.size or ImageChops.difference(current, fresh).getbbox():
+        print(f"{path.relative_to(REPO)} does not match SPR_COOKIE_BIG in web/js/pixels.js")
+        return True
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser(description="Draw the makemecookies!x4 app icon.")
     ap.add_argument("--sheet", metavar="PNG", help="write a 60/120/180px preview sheet here")
+    ap.add_argument("--check", action="store_true",
+                    help="exit 1 if the committed icons do not match the sprite table")
     args = ap.parse_args()
 
     icon_dir = ASSETS / "AppIcon.appiconset"
@@ -321,11 +344,23 @@ def main():
 
     icon = build_icon()
     icon_path = icon_dir / "AppIcon-512@2x.png"
+    dark_icon = build_icon(dark=True)
+    dark_path = icon_dir / "AppIcon-512@2x-dark.png"
+
+    # The shape lives in web/js/pixels.js now, which the title card blits and
+    # this script parses, so the game and the icon cannot draw different
+    # cookies. What that moved rather than removed is the gap to the PNGs:
+    # they are committed, and editing the sprite and regenerating are two acts
+    # where they used to be one. This is what notices the second being skipped.
+    if args.check:
+        if stale(icon_path, icon) | stale(dark_path, dark_icon):
+            raise SystemExit("run: python ios/tools/make-cookie-pixel.py   and commit the result")
+        print("icon matches web/js/pixels.js")
+        return
+
     icon.save(icon_path)
     print(f"icon     {icon_path.relative_to(REPO)}  {icon.size[0]}x{icon.size[1]}")
 
-    dark_icon = build_icon(dark=True)
-    dark_path = icon_dir / "AppIcon-512@2x-dark.png"
     dark_icon.save(dark_path)
     print(f"dark     {dark_path.relative_to(REPO)}  {dark_icon.size[0]}x{dark_icon.size[1]}")
 
