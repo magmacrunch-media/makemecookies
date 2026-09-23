@@ -45,6 +45,43 @@
 
 .title-stack { position: relative; z-index: 1; }
 
+/* ── The hero cookie ─────────────────────────────────────────────────
+   The app icon's cookie, on the card the app opens on. Painted from
+   SPR_COOKIE_BIG into a canvas rather than shipped as a PNG or an SVG,
+   which buys three things: it is the same table the icon script reads,
+   so the two cannot drift; it recolours with the game when the palette
+   moves; and it adds no asset to stamp, to sync, or for the bundle to
+   go looking for.
+
+   `pixelated` is the whole look and is not optional. The backing store
+   is 25 cells at 8px, so every display size under 200px is a downscale,
+   and a smoothed downscale of chunky art is a smudge, which is the one
+   way this can come out looking worse than no cookie at all. */
+.title-cookie {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: clamp(76px, 17vmin, 132px);
+  height: auto;
+  image-rendering: pixelated;
+  /* The same butter glow the fourth title line carries, so the cookie
+     reads as lit by the sign rather than pasted in front of it. */
+  filter: drop-shadow(0 0 18px rgba(255, 201, 60, 0.30));
+  animation: cookieBob 3.4s ease-in-out infinite;
+}
+
+/* It rises and settles. Not a spin: the title above it is already
+   flickering four times on four different beats, and a second motion
+   competing for the same eye turns a still card into a busy one. */
+@keyframes cookieBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-cookie { animation: none; }
+}
+
 /* The title, four times.
    The song is "makemecookies! x4." and the card used to say the name once with
    X4 under it, which is the arithmetic rather than the joke. Four of it, each
@@ -206,3 +243,18 @@
 }
 .title-publisher-link:hover { color: rgba(234, 217, 236, 0.75); }
 .title-publisher-link:hover .title-publisher-mark { opacity: 0.85; }
+
+/* ── Short viewports (landscape phones) ──────────────────────────────
+   The phone is locked to landscape in the app, so this is the shape the
+   card is actually opened in, not an edge case. There is about 440pt of
+   height for the cookie, four title lines, the rule, three buttons and
+   the publisher's mark, and the mark is pinned to the floor rather than
+   flowing, so the rest has to fit above it.
+
+   The cookie is what gives up the height: it is the only thing here
+   that is still itself at half the size, where a shrunk button becomes
+   a worse target and a shrunk title line becomes unreadable. */
+@media (max-height: 480px) {
+  #title-overlay { gap: 12px; padding: 14px 24px; }
+  .title-cookie { width: clamp(52px, 12vmin, 76px); }
+}

@@ -20,9 +20,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css?v=abf25d69">
-<link rel="stylesheet" href="css/layout.css?v=d8e37fcb">
+<link rel="stylesheet" href="css/layout.css?v=91e7eff9">
 <link rel="stylesheet" href="css/modals.css?v=92038100">
-<link rel="stylesheet" href="css/title.css?v=a8c833c7">
+<link rel="stylesheet" href="css/title.css?v=745ff82e">
 
 </head>
 <body>
@@ -93,6 +93,13 @@
 
 <!-- ── Title card ─────────────────────────────────────────────────── -->
 <div id="title-overlay">
+  <!-- The cookie off the app icon. Painted into the canvas from
+       SPR_COOKIE_BIG by main.js rather than shipped as an image, so the
+       home screen and the first screen are reading one table and cannot
+       come to show two different cookies. Decoration: the card announces
+       its name through .title-main and does not need this read out too. -->
+  <canvas class="title-cookie" id="title-cookie" aria-hidden="true"></canvas>
+
   <div class="title-stack">
     <!-- The title four times over, which is what x4 means. The first three
          are decoration and are hidden from assistive tech, so the card still
@@ -277,11 +284,11 @@
 <script src="../shared/score-server.js?v=9acd988c"></script>
 <script>const scoreClient = new AdScore.ScoreClient().auto(MC_SCORE_OPTS);</script>
 <script src="js/config.js?v=ad80a492"></script>
-<script src="js/pixels.js?v=43f9f1cb"></script>
+<script src="js/pixels.js?v=ebd91790"></script>
 <script src="js/stations.js?v=f76edefe"></script>
 <script src="js/render.js?v=dbee2dcc"></script>
 <script src="js/moments.js?v=e78359c7"></script>
-<script src="js/main.js?v=e99ab77a"></script>
+<script src="js/main.js?v=79e85052"></script>
 
 <link rel="stylesheet" href="../shared/chat-widget.css?v=21d22238">
 <script src="../shared/adenosine-chat.js?v=4a6b886b"></script>

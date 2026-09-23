@@ -25,12 +25,20 @@ Against the deep plum the panels already use it differs by about 142, so the
 cookie carries itself and the pink becomes a glow behind it rather than a field
 under it. The checkerboard is the title screen's diner floor at the same angle.
 
-## The palette is not retyped
+## Nothing about the cookie is retyped
 
-Every colour comes from `web/js/pixels.js`, parsed, so a cookie recoloured in
-the game cannot leave the icon painting the old one. The three the icon needs
-and the sprite sheet does not -- the two ground stops and the glow -- are named
-here and nowhere else.
+The colours and the shape both come from `web/js/pixels.js`, parsed: the `PAL`
+table and the `SPR_COOKIE_BIG` sprite. So a cookie recoloured OR redrawn in the
+game cannot leave the icon painting the old one, and the title card, which
+blits the same sprite, cannot drift from the home screen either.
+
+The shape used to be computed here instead -- a disc with two low harmonics on
+the rim -- which put the icon's cookie in the one file the game could not read.
+The palette was already parsed to avoid exactly that; the shape was the half
+that got away.
+
+The three colours the icon needs and the sprite sheet does not -- the two
+ground stops and the glow -- are named here and nowhere else.
 """
 
 import argparse
@@ -66,13 +74,9 @@ def read_palette():
 
 PAL = read_palette()
 
-DOUGH = PAL["D"]        # lit face
-BODY = PAL["T"]         # the cookie itself
-CRUST = PAL["t"]        # its shadow, and the rim
-CHIP = PAL["C"]         # chocolate
-CHIP_DARK = PAL["B"]    # under each chip
 MINT = PAL["M"]         # the sprinkle that makes it this game's cookie
-OUTLINE = PAL["K"]
+                        # -- named here because make-splash.py reads it for
+                        # the tagline, not because the cookie needs it.
 
 # Ground. Not in pixels.js because nothing in the game draws it: the title
 # screen builds the same look out of CSS gradients.
@@ -85,75 +89,82 @@ NEON = (255, 46, 156)
 
 # ---- the cookie ------------------------------------------------------------
 
-# Chips, as (column, row) of a 2x2 block on the 32-grid, and mint as single
-# cells. Placed by hand: a random scatter clumps, and a clump at 60px reads as
-# one dark smudge rather than as chocolate.
-CHIPS = [(10, 11), (17, 9), (21, 14), (11, 17), (17, 19), (14, 14)]
-SPRINKLES = [(22, 19), (9, 15), (15, 8)]
+# Where the sprite sits in the 32-cell icon grid, and it is NOT centred.
+#
+# The cookie used to be computed here: a disc with two low harmonics on the
+# rim, chips placed by hand, and a one-cell outline walked around the result.
+# Its tight bounding box landed 25 cells wide, half a cell right of centre,
+# and this is that placement kept. Centring it would move the art by a cell
+# and change an icon that has already been judged at 60px, for no reason
+# beyond the offset looking tidier in this file.
+#
+# The margin is the part that matters and is why the grid is bigger than the
+# cookie at all: 3 and 4 cells of clearance are what keep the disc inside the
+# rounded mask iOS draws. build_icon asserts that, so an edit that fattens the
+# sprite fails there rather than shipping a cookie with a corner shaved off.
+COOKIE_AT = (4, 3)
+
+
+def read_cookie_sprite():
+    """SPR_COOKIE_BIG out of web/js/pixels.js, as a list of string rows.
+
+    The shape is no longer computed here, and that is the point. Computing it
+    meant the icon's cookie existed in the one file the game cannot read, so
+    the game could redraw or recolour its cookie and the home screen would go
+    on showing the old one with nothing to say so. The palette was already
+    parsed for exactly that reason -- the shape was the half that got away.
+
+    The table carries its own outline, as every sprite in that file does, so
+    nothing is drawn around it here.
+    """
+    text = (WEB / "js" / "pixels.js").read_bytes().decode()
+    block = re.search(r"const SPR_COOKIE_BIG = \[(.*?)\n\];", text, re.DOTALL)
+    if not block:
+        raise SystemExit(
+            "could not find SPR_COOKIE_BIG in web/js/pixels.js; the icon is drawn "
+            "from that table and has no cookie of its own to fall back on."
+        )
+    rows = re.findall(r"'([^']*)'", block.group(1))
+    if not rows:
+        raise SystemExit("SPR_COOKIE_BIG in web/js/pixels.js has no rows")
+    width = len(rows[0])
+    if any(len(r) != width for r in rows):
+        raise SystemExit("SPR_COOKIE_BIG has rows of differing length")
+
+    ox, oy = COOKIE_AT
+    if ox + width > GRID or oy + len(rows) > GRID:
+        raise SystemExit(
+            f"SPR_COOKIE_BIG is {width}x{len(rows)} and does not fit the {GRID}-cell "
+            f"icon grid at {COOKIE_AT}. Shrink it, or re-place it and re-judge the "
+            f"icon at 60px -- the margin is what keeps it inside the corner mask."
+        )
+    return rows
 
 
 def cookie_cells():
-    """The 32x32 grid, as a dict of (x, y) -> colour.
-
-    The disc is computed rather than typed. A hand-drawn circle this small
-    comes out lumpy in the places you did not mean, and a cookie needs its
-    lumps somewhere deliberate: two low harmonics give an edge that is
-    irregular without reading as a mistake.
-    """
+    """The 32x32 grid, as a dict of (x, y) -> colour."""
+    ox, oy = COOKIE_AT
     cells = {}
-    c = GRID / 2
-
-    for y in range(GRID):
-        for x in range(GRID):
-            dx, dy = x + 0.5 - c, y + 0.5 - c
-            r = math.hypot(dx, dy)
-            ang = math.atan2(dy, dx)
-            edge = 11.3 + 0.55 * math.sin(3 * ang + 0.7) + 0.35 * math.sin(5 * ang + 2.1)
-            if r > edge:
+    for y, row in enumerate(read_cookie_sprite()):
+        for x, ch in enumerate(row):
+            if ch in ". ":
                 continue
-            # Light as a rim rather than as a half-plane. Splitting the disc
-            # diagonally into a lit half and a dark half is what a first pass
-            # does, and it reads as a fold across the cookie: the eye takes a
-            # straight boundary through the middle of a round thing as a crease.
-            # Confining both tones to arcs near the edge leaves the middle one
-            # colour and the shape reads as round.
-            if r > edge - 1.0:
-                cells[(x, y)] = CRUST
-            elif r > edge - 2.9 and dx + dy < -2.5:
-                cells[(x, y)] = DOUGH          # lit from the top left, as the sprites are
-            elif r > edge - 3.4 and dx + dy > 3.0:
-                cells[(x, y)] = CRUST
-            else:
-                cells[(x, y)] = BODY
-
-    for cx, cy in CHIPS:
-        for x in range(cx, cx + 2):
-            for y in range(cy, cy + 2):
-                if (x, y) in cells:
-                    cells[(x, y)] = CHIP
-        for x, y in ((cx, cy + 2), (cx + 1, cy + 2)):
-            if cells.get((x, y)) in (BODY, CRUST, DOUGH):
-                cells[(x, y)] = CHIP_DARK
-
-    for x, y in SPRINKLES:
-        for cell in ((x, y), (x + 1, y - 1)):
-            if cell in cells:
-                cells[cell] = MINT
-
+            colour = PAL.get(ch)
+            if colour is None:
+                raise SystemExit(
+                    f"SPR_COOKIE_BIG uses '{ch}', which web/js/pixels.js has no PAL "
+                    f"entry for. The blitter there would skip it and draw a hole; "
+                    f"here it would be a silently missing pixel."
+                )
+            cells[(x + ox, y + oy)] = colour
     return cells
 
 
 def draw_cookie():
-    """The cookie at 32x32 with a one-cell outline, on transparency."""
-    cells = cookie_cells()
+    """The cookie at 32x32, outline and all, on transparency."""
     art = Image.new("RGBA", (GRID, GRID), (0, 0, 0, 0))
-    for (x, y), colour in cells.items():
+    for (x, y), colour in cookie_cells().items():
         art.putpixel((x, y), colour + (255,))
-    for (x, y) in list(cells):
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < GRID and 0 <= ny < GRID and (nx, ny) not in cells:
-                art.putpixel((nx, ny), OUTLINE + (255,))
     return art
 
 

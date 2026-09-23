@@ -495,6 +495,31 @@ function setupListeners() {
 
 // ── Title screen ─────────────────────────────────────────────────────
 
+/**
+ * Paint the hero cookie on the title card.
+ *
+ * Drawn from SPR_COOKIE_BIG rather than loaded as an image, so the card
+ * shows the app icon's cookie by reading the icon's own table instead of
+ * by somebody remembering to re-export a PNG.
+ *
+ * The backing store is sized in WHOLE cells, and that is the only part
+ * here with a way to go wrong: `sprite()` fills a run of same-coloured
+ * cells as one rect, so a fractional cell size lands those rects on
+ * fractional pixels and leaves hairline seams between the runs. CSS then
+ * scales the result to whatever the card has room for, which is safe
+ * because .title-cookie asks for `pixelated`.
+ *
+ * Called once at init. The card is built before a shift and survives
+ * every return to it, so there is nothing to repaint.
+ */
+function paintTitleCookie() {
+  const cv = document.getElementById('title-cookie');
+  if (!cv) return;
+  const CELL = 8;
+  cv.width = cv.height = COOKIE_BIG_CELLS * CELL;
+  sprite(cv.getContext('2d'), SPR_COOKIE_BIG, 0, 0, CELL);
+}
+
 function showTitleScreen() {
   const to = document.getElementById('title-overlay');
   to.classList.remove('dismissing');
@@ -513,6 +538,7 @@ function dismissTitle() {
 
 (async () => {
   setupListeners();
+  paintTitleCookie();
 
   AdRPG.initInput({
     onPause: () => { if (running && !finished) togglePause(); },

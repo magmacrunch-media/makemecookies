@@ -258,3 +258,54 @@ const SPR_SPLAT = [
   'XXXXXXXXXX',
   '.XXXXXXXX.',
 ];
+
+// ── The cookie the game is named after ───────────────────────────────
+// 25 x 25, square, and the same cookie that is on the app icon.
+//
+// Nothing in play draws it: it is far too big for the line, and the item
+// on the belt is SPR_COOKIE above. This one is the title card's hero and
+// the icon's subject, which is why it sits apart from the sprites rather
+// than beside its little namesake.
+//
+// `ios/tools/make-cookie-pixel.py` reads THIS table. It used to compute
+// the disc itself, in Python, which meant the icon's cookie existed in
+// the one place the game could not see, so the icon could go on painting
+// a cookie the game had stopped drawing and nothing would say so. The
+// script already refused to retype the palette for that reason; the shape
+// was the half that got away. Edit it here and the icon follows.
+//
+// Lit from the top left like every sprite above, but with the light kept
+// to arcs near the rim rather than split across the disc: a straight
+// boundary through the middle of a round thing reads as a fold, not as
+// shading, so the middle stays one colour and the shape stays round.
+const SPR_COOKIE_BIG = [
+  '..........KKKKK..........',
+  '.......KKKtttttK.........',
+  '......KtttDDDDttK........',
+  '....KKttDDDDDDDDtK.......',
+  '...KttDDDDTTMTDDDtK......',
+  '..KttDDDTTTMTTTTDTtK.....',
+  '..KtDDDTTTTTTCCTTTTtK....',
+  '.KtDDDTTTTTTTCCTTTTTtK...',
+  '.KtDDTCCTTTTTBBTTTTTttK..',
+  '.KtDDTCCTTTTTTTTTTTttttK.',
+  'KtDDTTBBTTTTTTTTTTTTtttK.',
+  'KtDDTTMTTTCCTTTTTCCTttttK',
+  'KtDDTMTTTTCCTTTTTCCTTtttK',
+  'KtDDTTTTTTBBTTTTTBBTTtttK',
+  'KtDDTTTCCTTTTTTTTTTTttttK',
+  'KtDDTTTCCTTTTTTTTTTMttttK',
+  'KtDDTTTBBTTTTCCTTTMttttK.',
+  'KtDDTTTTTTTTTCCTTTtttttK.',
+  '.KtDTTTTTTTTTBBTTTttttK..',
+  '.KtTTTTTTTTTTTTTtttttK...',
+  '.KttTTTTttttttttttttK....',
+  '..KttTTttttttttttttK.....',
+  '...KKtttttttttttttK......',
+  '.....KKKKtttttttKK.......',
+  '.........KKKKKKK.........',
+];
+
+// How many cells across, for callers sizing a canvas to hold it. Square,
+// so this is both dimensions.
+const COOKIE_BIG_CELLS = SPR_COOKIE_BIG.length;

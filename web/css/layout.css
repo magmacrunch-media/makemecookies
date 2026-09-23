@@ -221,6 +221,84 @@ header .byline {
   .hud-value { font-size: 15px; }
 }
 
+/* ── Tall portrait: spend the letterbox ──────────────────────────────
+   The block above has said "spend the reclaimed height on the touch pad"
+   since it was written, and never did: it trimmed chrome and left the
+   height as trailing whitespace under the page. On a 390pt phone the
+   board is 171pt of an 844pt screen and the rest was margin.
+
+   There is no making the board bigger. It is 2.29:1 and the width is
+   already all of the screen, so its height follows from that and nothing
+   in a stylesheet changes it -- a taller board needs the field itself
+   laid out differently, which is a renderer's job and not this one's.
+
+   What the layout can do is stop treating the leftover as nothing, and
+   spread it rather than pile it. Three zones: the readout at the top,
+   the board in the middle where the eye already is, the touch row on the
+   floor under the thumbs, with the slack falling above and below the
+   board.
+
+   Handing the whole leftover to the touch row instead was the first
+   attempt and it is worth saying why it is wrong, because "bigger touch
+   targets" sounds like it cannot be: it produced a 290pt button with a
+   230pt hole above it. Past roughly 160pt a taller button has stopped
+   being easier to hit and is only further from the board, so the thumb
+   travels more to reach a target that was already big enough.
+
+   Gated on min-height rather than on `orientation: portrait` because
+   what matters is having height to hand out, not which way up the device
+   is: a short narrow window has nothing to spend and should keep the
+   compact row above. */
+@media (max-width: 480px) and (min-height: 600px) {
+  /* Fill the screen, so there is slack to distribute at all. Without
+     this the column is simply as tall as its contents and every rule
+     below has nothing to work with. dvh tracks the viewport actually
+     visible, the same reason the landscape block prefers it: with the
+     URL bar showing, 100vh overflows and pushes the controls off the
+     bottom, which is the one thing this block must not do.
+
+     The insets come off for the same reason, and this one only bites in
+     the app. `ios.css` pads the BODY by the safe-area insets, so a child
+     asking for the whole viewport is taller than the box it sits in and
+     the page scrolls by exactly the notch plus the home indicator --
+     which parks the controls under the indicator until you drag them
+     out. The variables exist only in the bundle; a browser takes the 0px
+     fallback and this lands back on a plain 100dvh. */
+  #app {
+    min-height: calc(100vh - var(--safe-top, 0px) - var(--safe-bottom, 0px));
+    min-height: calc(100dvh - var(--safe-top, 0px) - var(--safe-bottom, 0px));
+    padding-bottom: 12px;
+  }
+
+  /* The leftover, split evenly above and below the board. Everything
+     before the stage stays at the top and everything after it is pushed
+     to the floor, which is the whole three-zone layout in one rule. */
+  .stage { margin-top: auto; margin-bottom: auto; }
+
+  .touchpad {
+    min-height: clamp(110px, 17dvh, 160px);
+    /* The row is content-height by default, so the buttons would sit at
+       the top of the space the line above just reserved. This is what
+       actually puts that height into them. */
+    grid-auto-rows: 1fr;
+  }
+  /* The 58px floor is for the compact row and would now fight the
+     stretch on a shorter phone. The grid row decides here. */
+  .tp { min-height: 0; gap: 5px; }
+  .tp b { font-size: 17px; }
+  .tp span { font-size: 11px; letter-spacing: 2px; }
+
+  /* The board is a fixed 0.41 of its authored size here, which puts the
+     per-station meters under 4pt and the bay labels below reading size.
+     Nothing in this file can help that -- it is the renderer's geometry.
+     What it can do is make the one readout that IS scalable bigger, and
+     the top of the screen has the room going spare. These are glanced at
+     rather than read, which is the case that rewards the size most. */
+  .hud-cell { padding: 10px 6px; }
+  .hud-label { font-size: 9px; margin-bottom: 8px; }
+  .hud-value { font-size: 24px; }
+}
+
 /* ── Short viewports (landscape phones) ─────────────────────────────
    Without this the desktop-sized header and HUD push the canvas below the
    fold, which is how the game "did not fit" in landscape despite landscape

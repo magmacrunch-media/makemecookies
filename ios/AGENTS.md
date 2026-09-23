@@ -126,11 +126,27 @@ nowhere.
 | `tools/make-cookie-pixel.py` | the app icon, light and dark, plus the `Contents.json` entry pairing them |
 | `tools/make-splash.py` | the launch image, written to all three filenames Capacitor registers |
 
-Neither retypes anything. The icon parses the `PAL` table out of
-`web/js/pixels.js`, so a cookie recoloured in the game cannot leave the icon
-painting the old one, and the splash imports the icon's backdrop rather than
-copying it. The font and the publisher's mark come from the website checkout,
-found the way `package.mjs` finds it.
+Neither retypes anything. The icon parses **both** the `PAL` table and the
+`SPR_COOKIE_BIG` sprite out of `web/js/pixels.js`, so a cookie recoloured *or
+redrawn* in the game cannot leave the icon painting the old one, and the splash
+imports the icon's backdrop rather than copying it. The font and the
+publisher's mark come from the website checkout, found the way `package.mjs`
+finds it.
+
+The shape moved into `pixels.js` on 2026-09-22, when the title card grew a hero
+cookie and would otherwise have been a third one. It had been computed in
+Python, a disc with two low harmonics on the rim, which is to say it lived in
+the one file the game cannot read. The palette was already parsed to prevent
+exactly that class of drift; the shape was the half that got away. The port was
+verified by regenerating both icons and both splashes and finding the bytes
+unchanged, so this bought the guarantee and changed no art.
+
+`COOKIE_AT` is the one thing the icon still owns about the cookie: where the
+25-cell sprite sits in the 32-cell grid. It is deliberately not centred: that
+is where the computed disc's bounding box fell, and the margin around it is
+what keeps the art inside the rounded mask iOS draws. `build_icon` asserts
+that, so a fattened sprite fails there rather than shipping with a corner
+shaved off.
 
 Three things they know that are easy to learn the hard way:
 
