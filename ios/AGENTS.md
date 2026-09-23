@@ -33,6 +33,33 @@ the app would fail at launch after building perfectly. The `ios-build` job on
 not prove on its own: that `GameCenterPlugin` is in the binary, and that the
 privacy manifest reached the bundle rather than only the repo.
 
+**"The binary" is two files since Xcode 16, and the check reads both.** A Debug
+build is split: this project's code compiles into `App.debug.dylib` and `App`
+itself is a ~70KB launcher stub carrying none of these classes, `AppDelegate`
+and `SceneDelegate` included. The step looked only at `App` and so reported
+`GameCenterPlugin not in the binary` on every run from 2026-09-19 to
+2026-09-23, with the project wired correctly throughout. A guard that accuses
+the thing it guards is worse than no guard, because the obvious next move is to
+go rewiring `project.pbxproj`, which is exactly what must not be done by hand.
+
+Diagnosed by cloning the CI layout onto the Mac and reading both files:
+`_OBJC_CLASS_$_GameCenterPlugin` was in `App.debug.dylib` all along, 186
+symbols of it. If this fails again, build it there before believing it:
+
+```
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # Xcode is
+                                    # installed but xcode-select points at CLT
+xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath ~/derived \
+  CODE_SIGNING_ALLOWED=NO build
+nm -a ~/derived/Build/Products/Debug-iphonesimulator/App.app/App.debug.dylib \
+  | grep '_OBJC_CLASS_\$_GameCenterPlugin'
+```
+
+**george-boole asserts none of this.** Its `ios-build` job compiles the app and
+stops there, so its green says the project builds and says nothing about
+whether the plugin survived into it. The same split applies there.
+
 Four edits to what `cap add` generated, each asserted to have matched once:
 
 | | |
