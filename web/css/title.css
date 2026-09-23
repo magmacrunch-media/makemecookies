@@ -233,10 +233,15 @@
   height: 32px;
   opacity: 0.55;
 }
+/* The mark sits ABOVE the name rather than beside it: stacked, it reads as
+   a signature block rather than as a line of text with a bullet in front
+   of it, and the logo is given room to be a shape instead of competing
+   with the words for the same 32px of height. */
 .title-publisher-link {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 9px;
+  gap: 6px;
   color: inherit;
   text-decoration: none;
   pointer-events: auto;
