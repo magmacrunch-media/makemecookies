@@ -189,6 +189,42 @@ jobs:
           if grep -rInE '<(script|link|img|source|audio)[^>]*(src|href)="https?:' . ; then echo "loads over the network"; exit 1; fi
           echo "clean"
 
+  # The committed app icon against the sprite table it is drawn from.
+  #
+  # The cookie's shape lives in web/js/pixels.js as SPR_COOKIE_BIG, which the
+  # title card blits and make-cookie-pixel.py parses, so the two cannot show
+  # different cookies. What that arrangement moved rather than removed is the
+  # gap between the table and the PNGs in the asset catalog: those are
+  # committed artifacts, and while the shape lived in the script, editing it
+  # and regenerating were the same act. They are two acts now, and skipping
+  # the second leaves an icon that is wrong in a way nothing in the repo
+  # mentions -- the game draws the new cookie, the home screen keeps the old.
+  #
+  # Regenerating and diffing is the check, because it asserts the artifact
+  # rather than a stamp standing in for it. The script writes Contents.json
+  # too, so this covers the light/dark pairing as well.
+  ios-art:
+    name: ios art
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Pillow
+        run: pip install --quiet pillow
+
+      - name: The icon still matches web/js/pixels.js
+        run: |
+          python ios/tools/make-cookie-pixel.py
+          if ! git diff --quiet -- ios/App/App/App/Assets.xcassets/; then
+            echo "::error::the committed app icon does not match SPR_COOKIE_BIG in web/js/pixels.js"
+            echo "Run: python ios/tools/make-cookie-pixel.py   and commit the result."
+            git diff --stat -- ios/App/App/App/Assets.xcassets/
+            exit 1
+          fi
+          echo "icon matches the table"
+
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.
   # Editing the Swift here is invisible from this repo, because a copy always
   # verifies clean against itself, so the check runs from the shell's end with

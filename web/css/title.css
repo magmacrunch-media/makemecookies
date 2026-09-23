@@ -256,5 +256,23 @@
    a worse target and a shrunk title line becomes unreadable. */
 @media (max-height: 480px) {
   #title-overlay { gap: 12px; padding: 14px 24px; }
-  .title-cookie { width: clamp(52px, 12vmin, 76px); }
+  .title-cookie { width: clamp(44px, 12vmin, 76px); }
+
+  /* The mark rejoins the flow here, and this is a fix for a class rather
+     than for the cookie that exposed it. Pinned to the floor it is
+     absolutely positioned, so nothing in the card above can see it: the
+     flex column centres its content against a container that appears
+     empty at the bottom, and whatever is last simply runs underneath.
+
+     There was 29px of clearance before the cookie, which read as fine
+     and was luck. The cookie costs 32px of it (64px of content, halved
+     by centring) and on an 812x375 phone with the home-indicator inset
+     the buttons ended up 3px OVER the mark. The next thing added to this
+     card would have found the same trap with no warning.
+
+     Static, it is a flex item like everything else and cannot be
+     overlapped. It keeps its place at the foot of the card because it is
+     last in the markup, and it clears the home indicator because the
+     overlay's own bottom padding already carries the inset. */
+  .title-publisher { position: static; margin-top: 2px; }
 }

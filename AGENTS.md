@@ -16,11 +16,24 @@ One game, one repo, versions beside each other:
   `wii/AGENTS.md` before touching it — in particular, the song **cannot** be the
   clock there, and the reason is not a shortcut.
 
+- `ios/` -- the App Store port, and **not** a third place to change anything.
+  It is *derived*: `ios/package.mjs` builds the bundle out of `web/` on every
+  build, so a gameplay fix in `web/js/` arrives here for free and a hand-edit
+  here is exactly the drift that arrangement exists to prevent. What lives in
+  `ios/` is only what has no browser counterpart, the Xcode project, the Game
+  Center and haptics shims, the art scripts and the store text. `ios/www/` is
+  generated and gitignored. Read `ios/AGENTS.md` before touching it.
+
 The second version arrived, which is what the repo existed for. The thing to
 protect from here is that they stay one game: a rule or a tuning value changed
 in one and not the other is the failure mode, it is silent, and the only thing
 watching for it is that each version's suite is the other's ported case for
 case. Change both, and say so in the commit.
+
+**Both means `web/` and `wii/`**, and the third version is not an omission.
+`ios/` derives from `web/` rather than reimplementing it, so it has nothing of
+its own that a rule change could leave stale, which is the whole reason it was
+built that way rather than as a third copy.
 
 ## AI Attribution
 
