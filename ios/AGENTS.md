@@ -56,9 +56,12 @@ nm -a ~/derived/Build/Products/Debug-iphonesimulator/App.app/App.debug.dylib \
   | grep '_OBJC_CLASS_\$_GameCenterPlugin'
 ```
 
-**george-boole asserts none of this.** Its `ios-build` job compiles the app and
-stops there, so its green says the project builds and says nothing about
-whether the plugin survived into it. The same split applies there.
+**george-boole asserts the same two things as of 2026-09-23.** Until then its
+`ios-build` compiled the app and stopped, so its green said the project builds
+and said nothing about whether the plugin survived into it. The step was ported
+across, checked against a real build on the Mac first: the plugin is in
+`App.debug.dylib` there too, so the two games agree and neither is asserting
+something it cannot meet.
 
 Four edits to what `cap add` generated, each asserted to have matched once:
 
