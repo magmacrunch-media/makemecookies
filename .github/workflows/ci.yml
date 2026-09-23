@@ -50,14 +50,30 @@ jobs:
       # Store shims are told. Both must stay DOM-free, or the suite above
       # stops being able to load them at all. Cheaper to assert than to
       # rediscover the day someone reaches for getElementById.
+      # Comments are stripped before the search, and that is the whole reason
+      # this step is written in node rather than as a grep. The grep read the
+      # file as text, so it matched English: moments.js says "the rush window
+      # opening is the one moment that is not a counter", and the guard called
+      # a DOM-free file a DOM-touching one. It had been failing on that comment
+      # since 2026-09-19, which cost nothing directly and quite a lot
+      # indirectly, because the rules and the star ladder run in the same job
+      # and a job that is always red is a job nobody reads.
       - name: The rules stay DOM-free
         run: |
           for f in web/js/stations.js web/js/moments.js; do
-            if grep -nE '\b(document|window|localStorage)\b' "$f"; then
-              echo "::error file=$f::$f must not touch the DOM; the headless suite loads it without one"
-              exit 1
-            fi
-            echo "$f is clean"
+            node -e '
+              const fs = require("fs");
+              const f = process.argv[1];
+              const code = fs.readFileSync(f, "utf8")
+                .replace(/\/\*[\s\S]*?\*\//g, " ")
+                .replace(/^\s*\/\/.*$/gm, " ");
+              const m = code.match(/\b(document|window|localStorage)\b/);
+              if (m) {
+                console.log(`::error file=${f}::${f} must not touch the DOM (found ${m[0]}); the headless suite loads it without one`);
+                process.exit(1);
+              }
+              console.log(`${f} is clean`);
+            ' "$f"
           done
 
   # The same rules again, in C. The host tests need nothing but a compiler —
