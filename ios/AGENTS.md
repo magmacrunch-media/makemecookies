@@ -80,9 +80,21 @@ spends reclaimed height on the touchpad, and a short-viewport block that sizes t
 960x420 field by height and calls landscape "the right shape for it". Locking
 would discard that work.
 
-**`Package.resolved` is not committed**, because only SPM on a Mac can generate
-it. CI resolves `capacitor-swift-pm` fresh each run and may pick a version nobody
-has tried. Commit what it produces once the app has run on a real device.
+**`Package.resolved` is committed as of 2026-09-23**, pinning
+`capacitor-swift-pm` **8.5.2**. Before that CI resolved it fresh on every run
+and could pick a version nobody had tried, which is a poor foundation for a job
+that now asserts what is in the built binary.
+
+It was generated on the Mac host, from a clean clone in the layout CI uses, by
+the same `xcodebuild` invocation the job runs. So the pin is what compiled and
+what CI went green against, which is short of the bar the earlier note here set
+("once the app has run on a real device") and well above the bar it replaced
+(whatever resolved that morning). Re-cut it after the first device run if the
+resolution moves.
+
+george-boole pins **8.5.1**, frozen at its 2026-09-17 verification. The two
+games disagreeing is the arrangement working: each holds what it was actually
+built against, and neither moves because the other did.
 
 ## The Game Center plugin is vendored, and the entitlement is not
 
