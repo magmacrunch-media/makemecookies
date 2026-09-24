@@ -1,11 +1,11 @@
 # makemecookies!x4, iOS
 
 **A complete App Store port, unsubmitted.** The bundle build, the Xcode project,
-the two shims, the app icon and launch image, and every App Store Connect field
-all exist, and CI checks each of them on every push. What is outstanding is an
-Apple account rather than code: the paid membership, the Game Center entitlement
-and capability that need it, and the leaderboard and achievements that cannot be
-created until then. There is deliberately no `App.entitlements`.
+the two shims, the app icon and launch image, `App.entitlements`, and every App
+Store Connect field all exist, and CI checks each of them on every push. What is
+outstanding is an Apple account rather than code: the paid membership, the Game
+Center capability that needs it, and the leaderboard and achievements that
+cannot be created until then.
 
 ```
 node ios/package.mjs      # web/ -> ios/www/
@@ -100,7 +100,7 @@ george-boole pins **8.5.1**, frozen at its 2026-09-17 verification. The two
 games disagreeing is the arrangement working: each holds what it was actually
 built against, and neither moves because the other did.
 
-## The Game Center plugin is vendored, and the entitlement is not
+## The Game Center plugin is vendored, and the entitlement is declared
 
 `App/App/App/GameCenterPlugin.swift` and `GameViewController.swift` come from
 `engines/hypnopompia` and **must not be edited here**. Bring a change back
@@ -116,12 +116,20 @@ Editing them here is the drift that arrangement exists to catch, and it is caugh
 from the shell's end: `sync.mjs --check` lists this repo in its `consumers.json`,
 and the `ios-shared` job runs it on every push to either side.
 
-**There is no `App.entitlements` yet, on purpose.** The Game Center capability
-makes a device build or archive fail by name until it is enabled for this bundle
-id on the paid account, and there is nothing to enable it for: leaderboard and
-achievement ids are undecided, and permanent once created. The plugin compiles and
-registers without it, which is what CI checks. Add the entitlement when issue #1
-settles the thresholds.
+**`App.entitlements` declares Game Center, and it is committed even though the
+capability cannot be enabled yet.** A device build or an archive fails by name
+on this entitlement until Game Center is switched on for `com.magmacrunch.makemecookies`
+on the paid account. That failure is the reason the file is here rather than an
+argument against it: shipping no entitlements file archives cleanly and then
+fails at Game Center sign-in, at runtime, with nothing naming the cause. Loud
+and early beats quiet and late, and george-boole made the same call.
+
+CI is unaffected. A simulator build signs ad hoc and never consults the file, the
+`ios-build` job passes `CODE_SIGNING_ALLOWED=NO`, and what it asserts is still
+only that the plugin compiles and registers.
+
+Added 2026-09-24. This section said the opposite until then, and both games
+answering one question two ways is what settled it.
 
 `ios/www/` is generated and gitignored. Never edit it; edit `web/` and rebuild.
 
@@ -157,7 +165,6 @@ belongs in `web/js/`; the app picks it up at the next build.
 |---|---|
 | the App Store Connect entries | `shim/gamekit.js` reports to one leaderboard and eight achievements that **do not exist yet**. Creating them, and the Game Center capability itself, needs the paid membership. The ids are below and are permanent once created |
 | a scoreboard rebuild | george-boole rebuilds its scoreboard modal inside the app; this game's is four columns and a close button, so the shim injects one GAME CENTER button into it instead |
-| `App.entitlements` | see the Game Center section above |
 
 ## The art is drawn by script, and was Capacitor's until 2026-09-19
 

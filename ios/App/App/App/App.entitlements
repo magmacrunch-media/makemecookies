@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Game Center. Normally written by Xcode's + Capability button; it is
+	     here in full because that button needs a paid Apple Developer account,
+	     and the Swift half is worth having ready before then.
+
+	     A simulator build signs ad hoc and does not check this against
+	     anything. A device build or an archive does: until Game Center is
+	     enabled for com.magmacrunch.makemecookies on the account, signing
+	     fails with a provisioning profile error naming this entitlement,
+	     which is expected rather than a mistake in the project.
+
+	     The alternative was to ship no entitlements file at all, which is
+	     what this port did until 2026-09-24. That archives cleanly and then
+	     fails at Game Center sign-in with nothing to point at; failing by
+	     name at build time is the louder and the earlier of the two. -->
+	<key>com.apple.developer.game-center</key>
+	<true/>
+</dict>
+</plist>

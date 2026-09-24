@@ -403,6 +403,6 @@ console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
   `\nThe bundle, the Xcode project, the art and the store text all exist. Still missing:`
     + `\n  - the leaderboard and the eight achievements are reported but do not exist in App Store Connect yet`
-    + `\n  - the Game Center capability and entitlement, which need the paid membership`
+    + `\n  - the Game Center capability, which needs the paid membership (App.entitlements declares it already)`
     + `\n  - magmacrunch.com/privacy/makemecookies/ and /support/makemecookies/, which live in the website repo`
 );
