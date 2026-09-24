@@ -92,6 +92,38 @@ music.addEventListener('loadedmetadata', syncDuration);
 music.addEventListener('durationchange', syncDuration);
 music.addEventListener('ended', () => endShift());
 
+// The song is the clock, so losing it mid-shift is not a missing soundtrack,
+// it is the shift being played deaf: the ramp and the four RUSH windows carry
+// on landing, on a frame counter, with nothing to hear them in.
+//
+// iOS hands the audio session to calls, to Control Center and to any app that
+// starts playing something, and the app is NOT backgrounded for all of those.
+// Backgrounding is already covered by the visibilitychange handler further
+// down; a Control Center pause leaves the game on screen and running, and this
+// is the case that was going unnoticed.
+//
+// Treated as the BREAK it already resembles. That is not just the kindest
+// answer, it is the one that keeps the two clocks together: the loop skips
+// update() entirely while paused, so the accumulator cannot advance behind the
+// modal, and the song resumes exactly where it stopped with the shift clock
+// still standing where it left it. Nothing diverges, and no stretch of the
+// shift is ever played in silence. Voiding the shift was the other candidate;
+// it throws away a run the player did nothing wrong in.
+//
+// It grants nothing either, which is the reason it needs no safeguard: the
+// PAUSE button already stops the clock for as long as you like.
+//
+// The condition is the whole of "we did not do this ourselves". Every place
+// in this file that pauses the music sets running/paused/finished first, so a
+// live, unpaused, unfinished shift whose music stopped was stopped from
+// outside. toTitle's ordering exists for this and is commented there.
+music.addEventListener('pause', () => {
+  if (running && !paused && !finished) {
+    togglePause();
+    setPauseReason('the music stopped. tap resume to pick the shift back up');
+  }
+});
+
 // ── Input ────────────────────────────────────────────────────────────
 // initInput records keysPressed for *every* key, so 1-5 need no binding.
 // But it only clears keysPressed on keyup, and consuming it by hand (as
@@ -363,11 +395,30 @@ function reportShift(bonus) {
   }
 }
 
+/**
+ * Swap the pause card's subtitle, or restore it with null.
+ *
+ * The default wording is read from index.html the first time rather than
+ * repeated here, so the card and this file cannot come to disagree about what
+ * a plain BREAK says.
+ */
+let pauseSubDefault = null;
+function setPauseReason(text) {
+  const el = document.querySelector('#modal-pause .modal-sub');
+  if (!el) return;
+  if (pauseSubDefault === null) pauseSubDefault = el.textContent;
+  el.textContent = text === null ? pauseSubDefault : text;
+}
+
 function togglePause() {
   if (!running || finished) return;
   paused = !paused;
   AdRPG.setGamePaused(paused);
   document.getElementById('btn-pause').textContent = paused ? 'RESUME' : 'PAUSE';
+  // Restored on the way in rather than on the way out: an interrupted shift
+  // that is resumed and then paused again by hand should say what a hand pause
+  // says. The audio-interruption handler overrides this immediately after.
+  setPauseReason(null);
   if (paused) { music.pause(); showModal('modal-pause'); }
   else { music.play().catch(() => {}); hideModal('modal-pause'); }
 }
@@ -380,8 +431,13 @@ function togglePause() {
  */
 function toTitle() {
   gameLoop.stop();
-  music.pause();
+  // The flags come down BEFORE the music, and the order is load-bearing: the
+  // audio 'pause' listener reads exactly this state to tell an interruption
+  // from a stop this file asked for. Pausing first would look, for one task
+  // queue turn, like the system had taken the song away mid-shift, and raise
+  // the BREAK card over a title screen.
   running = false; paused = false; finished = false;
+  music.pause();
   AdRPG.setGameStarted(false);
   AdRPG.setGamePaused(false);
   AdRPG.setGameOver(false);

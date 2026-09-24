@@ -426,11 +426,41 @@ for it.
 shift from a plain `<audio>` element's `ended` event and `currentTime`, chosen
 deliberately because AdAudio hardcodes `loop = true` and exposes neither. On iOS
 the system takes the audio session for calls, backgrounding and Control Center, so
-a shift can be paused or cut off from outside the game. **This is the port's one
-real design question** and it wants answering before anything cosmetic. The shift
-is only about 51 seconds, so "the shift is void, tap to restart" is a defensible
-cheap answer; george-boole never faced this because its music was ambient and its
-clock was moves.
+a shift can be paused or cut off from outside the game. This was the port's one
+real design question. **Answered 2026-09-23: an interruption is a BREAK.**
+
+A `pause` listener on the audio element raises the pause card, worded for the
+occasion, and the shift waits. "The shift is void, tap to restart" was the other
+candidate and was rejected: a 51-second shift is cheap to throw away, but the
+player did nothing wrong, and somebody else's phone call is a poor reason to
+lose a good run.
+
+Pausing turns out to be the technically cleaner answer as well, not just the
+kinder one. `AdRPG`'s loop skips `update()` entirely while paused, so the frame
+accumulator cannot advance behind the card, and the song resumes exactly where
+it stopped with the shift clock still standing where it left it. The two clocks
+cannot drift apart, and no stretch of a shift is ever played in silence. It also
+grants the player nothing, which is why it needs no safeguard: the PAUSE button
+already stops the clock for as long as you like.
+
+Backgrounding was already covered by the `visibilitychange` handler. The case
+this closes is the one that was going unnoticed: Control Center, or another app
+taking the session, which leaves the game on screen and running.
+
+**The listener's condition is load-bearing and so is `toTitle`'s ordering.** It
+fires on `running && !paused && !finished`, which is the whole of "we did not do
+this ourselves", and it works only because every other place in `main.js` that
+pauses the music sets those flags first. `toTitle` had to be reordered for it;
+the reason is commented there. Verified against all four paths in the built
+bundle: an interruption raises the card and freezes the clock, RESUME rejoins
+the song within 9ms, CLOCK OUT mid-shift raises nothing, and a shift running its
+full length ends on the SHIFT OVER card with no BREAK card behind it.
+
+The monotonic guard in the clock is the backstop for anything this does not
+catch, and is documented in `56126fe`.
+
+george-boole never faced any of this: its music was ambient and its clock was
+moves.
 
 ## What this folder is for, beyond this game
 
