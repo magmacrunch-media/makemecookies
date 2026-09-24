@@ -1,7 +1,11 @@
 # makemecookies!x4, iOS
 
-**Steps 1 and 2 of an App Store port.** The bundle build and the Xcode project
-exist. There is no icon, no shims, no entitlement and no store metadata yet.
+**A complete App Store port, unsubmitted.** The bundle build, the Xcode project,
+the two shims, the app icon and launch image, and every App Store Connect field
+all exist, and CI checks each of them on every push. What is outstanding is an
+Apple account rather than code: the paid membership, the Game Center entitlement
+and capability that need it, and the leaderboard and achievements that cannot be
+created until then. There is deliberately no `App.entitlements`.
 
 ```
 node ios/package.mjs      # web/ -> ios/www/

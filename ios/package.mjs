@@ -30,7 +30,7 @@
  * | self-host the font | **two families**, not one, so two `@font-face` blocks |
  * | drop `.ogg` | different mechanism: a `MUSIC_SOURCES` array, not an `AUDIO_EXT` ternary |
  * | arcade cross-promo, credits `last updated`, scoreboard rebuild | **absent here**, so not transforms at all |
- * | the four shims | **none yet**, see the note at the bottom |
+ * | the four shims | **two here**: one `gamekit.js` covers scores and achievements, and bests stay in the game rather than in a shim |
  *
  * ## The guard is the point
  *
@@ -401,8 +401,8 @@ console.log(`  fonts              ${FONTS.join(', ')}`);
 console.log(`  ogg left out       ${oggDropped} file(s) -- iOS decodes the mp3`);
 console.log(`  self-contained     yes (no ../ paths, no network assets)`);
 console.log(
-  `\nThe bundle, the Xcode project and the art exist. Still missing:`
+  `\nThe bundle, the Xcode project, the art and the store text all exist. Still missing:`
     + `\n  - the leaderboard and the eight achievements are reported but do not exist in App Store Connect yet`
     + `\n  - the Game Center capability and entitlement, which need the paid membership`
-    + `\n  - store metadata, and the privacy and support pages App Store Connect requires`
+    + `\n  - magmacrunch.com/privacy/makemecookies/ and /support/makemecookies/, which live in the website repo`
 );

@@ -16,13 +16,20 @@ no losing: only how much you shipped, and how much mess you left.
 |---|---|
 | `web/` | Browser version. Built on [adenosine](https://github.com/magmacrunch-media/adenosine) over the Canvas API. Play it at [magmacrunch.com](https://magmacrunch.com/arcade/makemecookies/) |
 | `wii/` | Wii homebrew, built on [magnolia](https://github.com/magmacrunch-media/magnolia). **Rules ported and tested; everything you can see is a placeholder.** See `wii/README.md` |
+| `ios/` | App Store build, on [hypnopompia](https://github.com/magmacrunch-media/hypnopompia) over Capacitor. Game Center, haptics, and no network of any kind. Not yet submitted: it waits on a paid Apple account. See `ios/AGENTS.md` |
 
 `web/` is the source of truth for rules and tuning. The website repo copies it
 into `arcade/makemecookies/` for deployment; its copy is generated and should
 never be edited directly.
 
+`ios/` is **derived** from `web/` rather than ported from it: `ios/package.mjs`
+builds `ios/www/` by copying `web/` and applying a documented list of
+transforms, each of which fails the build if it matches nothing. So it is not a
+third copy of the rules, and a tuning change does not reach it by hand.
+
 The second version arrived, which is the reason this repository exists at all.
-`wii/source/stations.c` is a line-for-line port of `web/js/stations.js` and
+That pairing is between `web/` and `wii/`; `ios/` is generated and joins neither
+side of it. `wii/source/stations.c` is a line-for-line port of `web/js/stations.js` and
 `wii/tests/test_stations.c` is the suite below ported case for case — that
 pairing is what keeps two versions of one game from becoming two games. A
 tuning change belongs in both `web/js/config.js` and `wii/source/config.h`.

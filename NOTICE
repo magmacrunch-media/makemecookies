@@ -46,8 +46,9 @@ If you want to use any of it, ask.
 THIRD-PARTY COMPONENTS
 
 Press Start 2P, by CodeMan38, licensed under the SIL Open Font License 1.1.
-Share Tech Mono, by Carrois Apostrophe, under the same licence. Both are loaded
-from Google Fonts by web/index.html rather than shipped here.
+Share Tech Mono, by Carrois Apostrophe, under the same licence. Both are
+self-hosted: the files live in the website repository and are referenced from
+web/ and copied into the iOS bundle, so neither build reaches Google Fonts.
 
 adenosine, the browser engine whose AdRPG module provides the game loop and
 input handling and whose score and chat clients the deployed page loads, is
