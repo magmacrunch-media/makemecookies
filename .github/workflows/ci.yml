@@ -245,7 +245,21 @@ jobs:
     name: ios art
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      # The icon needs only the game: it is drawn from web/js/pixels.js and
+      # uses no font. The Game Center art needs the website too, for the
+      # self-hosted Press Start 2P and the publisher's mark, so this job takes
+      # the flat layout the bundle jobs use rather than a bare checkout.
+      - name: Check out the game
+        uses: actions/checkout@v7
+        with:
+          path: makemecookies
+
+      - name: Check out the website beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/magmacrunch.com
+          path: website
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -253,7 +267,16 @@ jobs:
         run: pip install --quiet pillow
 
       - name: The icon still matches web/js/pixels.js
+        working-directory: makemecookies
         run: python ios/tools/make-cookie-pixel.py --check
+
+      # Catches both halves: art whose numbers no longer match web/js/config.js
+      # or the shim's table, and committed PNGs that were never redrawn after
+      # either moved. An id is permanent once created in App Store Connect and
+      # an image is not compiled, so nothing else here would notice.
+      - name: The Game Center art still matches the shim and the rules
+        working-directory: makemecookies
+        run: python ios/tools/make-boards.py --check
 
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.
   # Editing the Swift here is invisible from this repo, because a copy always
@@ -284,6 +307,20 @@ jobs:
       - name: The vendored plugin matches the shell
         working-directory: engines/hypnopompia
         run: npm run check
+
+      # New coverage rather than a move. Both of these are shell tools that took
+      # a path already; nothing was running either of them for this game, so the
+      # field limits and the ids held only when somebody remembered to check
+      # before a submission.
+      - name: Store metadata fits App Store Connect's limits
+        run: node engines/hypnopompia/tools/check-metadata.mjs games/makemecookies/ios
+
+      # The ids are permanent once created and a deleted one cannot be reused,
+      # so this runs long before there is an account to create them on. It also
+      # exits 2 when there is no art to check, which is the state that stopped
+      # this game's achievements being creatable at all.
+      - name: The Game Center ids and art are fit to create
+        run: node engines/hypnopompia/tools/check-game-center.mjs games/makemecookies/ios
 
   # The app itself, and the only thing that has ever compiled it. The two
   # vendored Swift files and PrivacyInfo.xcprivacy were wired into project.pbxproj

@@ -163,7 +163,7 @@ belongs in `web/js/`; the app picks it up at the next build.
 
 | | Why |
 |---|---|
-| the App Store Connect entries | `shim/gamekit.js` reports to one leaderboard and eight achievements that **do not exist yet**. Creating them, and the Game Center capability itself, needs the paid membership. The ids are below and are permanent once created |
+| the App Store Connect entries | `shim/gamekit.js` reports to one leaderboard and eight achievements that **do not exist yet**. Creating them, and the Game Center capability itself, needs the paid membership. The ids are below and are permanent once created. The art they require is drawn and committed, by `tools/make-boards.py` into `store/game-center/`, so only the account is missing |
 | a scoreboard rebuild | george-boole rebuilds its scoreboard modal inside the app; this game's is four columns and a close button, so the shim injects one GAME CENTER button into it instead |
 
 ## The art is drawn by script, and was Capacitor's until 2026-09-19
@@ -178,6 +178,7 @@ nowhere.
 |---|---|
 | `tools/make-cookie-pixel.py` | the app icon, light and dark, plus the `Contents.json` entry pairing them |
 | `tools/make-splash.py` | the launch image, written to all three filenames Capacitor registers |
+| `tools/make-boards.py` | the Game Center art, one square per achievement and one for the leaderboard, into `store/game-center/` |
 
 Neither retypes anything. The icon parses **both** the `PAL` table and the
 `SPR_COOKIE_BIG` sprite out of `web/js/pixels.js`, so a cookie recoloured *or
@@ -185,6 +186,21 @@ redrawn* in the game cannot leave the icon painting the old one, and the splash
 imports the icon's backdrop rather than copying it. The font and the
 publisher's mark come from the website checkout, found the way `package.mjs`
 finds it.
+
+`make-boards.py` is the same argument one step further, because its cards carry
+**numbers**. The ids, points and descriptions come from `ios/shim/gamekit.js` --
+from its `IDS` array and the table in its header, which it requires to agree
+with each other -- and the numbers on the cards from `web/js/config.js`: the
+thresholds from `STARS`, the box size from `TRAY_CAP`, the bonus name from
+`CLEAN_BONUS`, and the three star titles from `STAR_LABELS`, so a tier renamed
+in the game is renamed on the art. Tuning `STARS` without updating the shim's
+table now fails the build by name rather than shipping a card that promises a
+threshold the game does not use. Its `TITLES` map is the one editorial part and
+is asserted to cover exactly the shim's ids, so a ninth achievement cannot be
+added by accident.
+
+It needs the website checkout for the font and mark, which is why `ios-art`
+takes the flat layout rather than a bare checkout.
 
 The shape moved into `pixels.js` on 2026-09-22, when the title card grew a hero
 cookie and would otherwise have been a third one. It had been computed in
