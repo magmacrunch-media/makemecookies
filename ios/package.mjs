@@ -245,31 +245,29 @@ edit(state, 'remove the arcade back-links', (html) =>
     .replace(/[ \t]*<a href="\.\.\/action\/" class="mc-crumb"[^>]*>.*?<\/a>\r?\n/, '')
 );
 
-// Both families the page asks Google for, declared against the files copied
-// out of the website repo. `font-display: block` on both because the whole
-// look is the typeface: a swap from Menlo to Press Start 2P mid-paint is more
-// noticeable than the moment of nothing it replaces.
-edit(state, 'self-host the fonts and drop the CDN', (html) =>
-  html
-    .replace(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.(googleapis|gstatic)\.com"[^>]*>\r?\n/g, '')
-    .replace(
-      /[ \t]*<link href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]*" rel="stylesheet">/,
-      [
-        '<style>',
-        "    @font-face {",
-        "        font-family: 'Press Start 2P';",
-        "        src: url('fonts/PressStart2P-Regular.woff2') format('woff2'),",
-        "             url('fonts/PressStart2P-Regular.ttf') format('truetype');",
-        '        font-display: block;',
-        '    }',
-        "    @font-face {",
-        "        font-family: 'Share Tech Mono';",
-        "        src: url('fonts/ShareTechMono-Regular.woff2') format('woff2');",
-        '        font-display: block;',
-        '    }',
-        '</style>',
-      ].join('\n')
-    )
+// The page self-hosts both faces itself now, so there is no CDN here to strip
+// and no @font-face to inject: the two blocks live in web/index.html and this
+// only has to point them at the copies copyFonts puts beside the page. Same
+// shape as pointSharedAssets, and for the same reason -- `../../fonts/`
+// resolves in the website's arcade/, not in a bundle.
+//
+// split/join rather than a regex so every occurrence moves together, and edit()
+// is fatal when a step changes nothing, so a path that stops matching stops the
+// build rather than shipping a page whose fonts silently 404. That guard is
+// worth naming because the self-contained sweep cannot stand in for it here:
+// it reads src= and href= attributes, and an @font-face reaches outside the
+// bundle through url(), which it does not look at.
+edit(state, 'point the fonts at the bundle', (html) =>
+  html.split('../../fonts/').join('fonts/')
+);
+
+// The bundle overrides the page's `swap` to `block`. On the web a swap is the
+// right trade, because the text is readable in a fallback while a network
+// fetch is in flight. In the app the files are on the device and the wait is
+// a few frames, so the whole look arriving at once beats Menlo appearing and
+// being replaced.
+edit(state, 'font-display: block, not swap', (html) =>
+  html.split('font-display: swap;').join('font-display: block;')
 );
 
 transforms.pointSharedAssets(build, state);

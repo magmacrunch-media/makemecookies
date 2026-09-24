@@ -427,9 +427,33 @@ assumed: both files serve 200, `document.fonts` reports both loaded, and the
 family measures 129.6px against Courier New's 144.0 and a deliberately bogus
 control's 133.4, so it is the real face and not a silent substitution.
 
-**The website still takes both families off Google's CDN.** Moving it off
-touches `arcade/tetris/` as well, which uses the same two, and is a change of
-its own. What is here is the bundle's half.
+**`web/index.html` self-hosts them too as of 2026-09-23, so there is no CDN
+left on either side.** The page declares both `@font-face` blocks itself,
+against `../../fonts/`, which names files this repo does not contain: they
+resolve once `web/` has been copied into the website's `arcade/makemecookies/`,
+exactly the arrangement `../shared/` has always had.
+
+That changed what this script does about fonts. It used to strip the Google
+tags and inject the `@font-face`; now the blocks are already in the page and it
+only repoints the paths at the bundle's own `fonts/`, the same shape as
+`pointSharedAssets`. The one thing it still rewrites is `font-display`: the
+page says `swap`, which is right on the web where a fallback is readable while
+a fetch is in flight, and the bundle says `block`, because the files are on the
+device and the whole look arriving at once beats Menlo appearing and being
+replaced.
+
+**The sweep cannot see this, and `edit()` is what does.** `sweepSelfContained`
+reads `src=` and `href=` attributes, and an `@font-face` reaches outside the
+bundle through `url()`, which it does not look at. What stops a silently broken
+path is the no-op-is-fatal rule: `split`/`join` moves every occurrence at once,
+and a step that changes nothing kills the build. Worth knowing before adding
+another CSS asset that points outside the bundle.
+
+`arcade/tetris/` was moved off the CDN in the website repo the same day, in
+`14a6c391`. **The deployed `arcade/makemecookies/` is not**, and will keep its
+CDN links until somebody runs `make sync-makemecookies`; that copy is a long
+way behind this repo, missing `js/moments.js` and `img/` among other things, so
+the sync is a real deployment rather than a font change.
 
 **The song is the clock, and iOS will interrupt it.** `js/main.js` drives the
 shift from a plain `<audio>` element's `ended` event and `currentTime`, chosen

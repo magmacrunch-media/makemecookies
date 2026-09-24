@@ -16,9 +16,34 @@
 </style>
 
 <link rel="stylesheet" href="../shared/arcade-base.css?v=de5e0d7b">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- Both faces, self-hosted, so the page needs no Google Fonts round trip.
+     `../../fonts/` names files that are not in this repo, the same arrangement
+     as `../shared/` above: they resolve once web/ has been copied into the
+     website's arcade/makemecookies/, and ios/package.mjs repoints them at the
+     bundle's own fonts/ when it builds the app.
+
+     `display=swap` was on the CDN URL this replaces, so font-display: swap
+     keeps the behaviour the page had. The bundle overrides it to block, for a
+     reason written down in ios/package.mjs.
+
+     Preloaded because the faces are declared in a stylesheet the browser has
+     not parsed when it reaches the head, so without this the fetch queues
+     behind it and the swap lands later than it did on the CDN. -->
+<link rel="preload" as="font" type="font/woff2" href="../../fonts/PressStart2P-Regular.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="../../fonts/ShareTechMono-Regular.woff2" crossorigin>
+<style>
+    @font-face {
+        font-family: 'Press Start 2P';
+        src: url('../../fonts/PressStart2P-Regular.woff2') format('woff2'),
+             url('../../fonts/PressStart2P-Regular.ttf') format('truetype');
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Share Tech Mono';
+        src: url('../../fonts/ShareTechMono-Regular.woff2') format('woff2');
+        font-display: swap;
+    }
+</style>
 <link rel="stylesheet" href="css/base.css?v=abf25d69">
 <link rel="stylesheet" href="css/layout.css?v=91e7eff9">
 <link rel="stylesheet" href="css/modals.css?v=92038100">
