@@ -162,8 +162,25 @@ function update(dtFactor) {
   // The shift clock is the song, not the frame counter — so the ramp and
   // the four rush windows land on the music even when the tab drops
   // frames. The accumulator is the fallback for a rejected play().
-  if (!music.paused && music.currentTime > 0) st.elapsed = music.currentTime * 1000;
-  else st.elapsed += dtMs;
+  //
+  // It only ever goes forwards, and that guard is for iOS. The two sources
+  // disagree the moment the system takes the audio session and hands it
+  // back: on an interruption `music.paused` goes true and the accumulator
+  // carries the shift on, in silence; when the song resumes it resumes
+  // where it stopped, which is now BEHIND. A bare assignment would rewind
+  // the shift by the length of the interruption, and a rewind is not a
+  // cosmetic glitch here, because RUSH_AT is read as "is the clock inside
+  // this window" every frame rather than as an event that has fired. Going
+  // back over a window opens it a second time.
+  //
+  // Taking the later of the two keeps the song as the clock whenever the
+  // song is actually playing, which is the normal case and the whole point
+  // of reading currentTime, and leaves a shift interrupted mid-way running
+  // on the accumulator rather than repeating itself. What SHOULD happen to
+  // a shift whose music was taken away is still open (see the audio note in
+  // ios/AGENTS.md); this is the part that is right either way.
+  const fromSong = !music.paused && music.currentTime > 0 ? music.currentTime * 1000 : 0;
+  st.elapsed = Math.max(st.elapsed + (fromSong ? 0 : dtMs), fromSong);
 
   st.rush = RUSH_AT.findIndex((f) => {
     const t0 = f * st.shiftMs;
