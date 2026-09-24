@@ -27,7 +27,7 @@
  * | drop chat, drop score-server, unconnect ScoreClient | identical |
  * | `../shared/` rewrite, `?v=` strip, viewport-fit, Safari metas, ios.css | identical |
  * | back-link removal | **two** links, not one (`../` and `../action/`) |
- * | self-host the font | **two families**, and only one is self-hostable (below) |
+ * | self-host the font | **two families**, not one, so two `@font-face` blocks |
  * | drop `.ogg` | different mechanism: a `MUSIC_SOURCES` array, not an `AUDIO_EXT` ternary |
  * | arcade cross-promo, credits `last updated`, scoreboard rebuild | **absent here**, so not transforms at all |
  * | the four shims | **none yet**, see the note at the bottom |
@@ -126,20 +126,29 @@ const SHARED = {
 /**
  * Self-hostable font files, copied from the website repo.
  *
- * **`web/index.html` asks Google for two families and only this one is
- * available.** `Share Tech Mono` is used by four rules in `css/` and is credited
- * on the credits screen, but the website repo's `fonts/` carries only
- * PressStart2P and CourierPrime. A bundle may not fetch it at runtime, so until
- * somebody adds `ShareTechMono-Regular.woff2` to the website, those four rules
- * fall through to the fallbacks they already declare: `'Courier New', monospace`
- * in `base.css` and bare `monospace` in `layout.css` and `modals.css`.
+ * **Both families `web/index.html` asks Google for are available as of
+ * 2026-09-23.** Until then the website's `fonts/` carried only PressStart2P and
+ * CourierPrime, and since a bundle may not fetch a font at runtime, the four
+ * `css/` rules using Share Tech Mono fell through to the fallbacks they already
+ * declare: `'Courier New', monospace` in `base.css` and bare `monospace` in
+ * `layout.css` and `modals.css`. That was most of the game's non-pixel text on
+ * a phone -- the body default and the five touchpad labels among it -- rendered
+ * in Menlo, with the credits screen naming a font the app had never loaded.
  *
- * That is a visible difference from the web version, not a broken bundle, and it
- * is recorded here rather than left to be noticed on a device. Adding the file to
- * the website repo is the real fix and would benefit the site too, which
- * currently depends on Google's CDN for it.
+ * `ShareTechMono-Regular.woff2` is in the website repo now, so both are
+ * self-hosted here and the bundle matches the browser. The website itself still
+ * takes both families off Google's CDN; moving it off touches tetris as well
+ * and is a change of its own.
+ *
+ * A family added to `web/index.html` without its file being added here is the
+ * case this list exists to make visible: `copyFonts` fails by name on a missing
+ * file rather than shipping a bundle that quietly falls back.
  */
-const FONTS = ['PressStart2P-Regular.woff2', 'PressStart2P-Regular.ttf'];
+const FONTS = [
+  'PressStart2P-Regular.woff2',
+  'PressStart2P-Regular.ttf',
+  'ShareTechMono-Regular.woff2',
+];
 
 /**
  * Scripts that exist only in the app.
@@ -236,10 +245,11 @@ edit(state, 'remove the arcade back-links', (html) =>
     .replace(/[ \t]*<a href="\.\.\/action\/" class="mc-crumb"[^>]*>.*?<\/a>\r?\n/, '')
 );
 
-// Press Start 2P only. Share Tech Mono has no self-hosted file, so its four
-// rules fall back; see the FONTS comment above for why that is a recorded
-// tradeoff rather than an oversight.
-edit(state, 'self-host Press Start 2P and drop the CDN', (html) =>
+// Both families the page asks Google for, declared against the files copied
+// out of the website repo. `font-display: block` on both because the whole
+// look is the typeface: a swap from Menlo to Press Start 2P mid-paint is more
+// noticeable than the moment of nothing it replaces.
+edit(state, 'self-host the fonts and drop the CDN', (html) =>
   html
     .replace(/[ \t]*<link rel="preconnect" href="https:\/\/fonts\.(googleapis|gstatic)\.com"[^>]*>\r?\n/g, '')
     .replace(
@@ -252,7 +262,11 @@ edit(state, 'self-host Press Start 2P and drop the CDN', (html) =>
         "             url('fonts/PressStart2P-Regular.ttf') format('truetype');",
         '        font-display: block;',
         '    }',
-        '    /* Share Tech Mono is not self-hosted; css/ already declares its fallbacks. */',
+        "    @font-face {",
+        "        font-family: 'Share Tech Mono';",
+        "        src: url('fonts/ShareTechMono-Regular.woff2') format('woff2');",
+        '        font-display: block;',
+        '    }',
         '</style>',
       ].join('\n')
     )
@@ -393,5 +407,4 @@ console.log(
     + `\n  - the leaderboard and the eight achievements are reported but do not exist in App Store Connect yet`
     + `\n  - the Game Center capability and entitlement, which need the paid membership`
     + `\n  - store metadata, and the privacy and support pages App Store Connect requires`
-    + `\n  - Share Tech Mono falls back; see the FONTS note in this file`
 );

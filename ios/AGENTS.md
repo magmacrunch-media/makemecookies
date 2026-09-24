@@ -410,17 +410,26 @@ prevent. Both were fixed in the seam rather than worked around:
 The haptics shim reads the first of these already: WARNING when the oven
 catches, SUCCESS when the mash works, which is legible without looking.
 
-## Two known divergences from the web version
+## Two divergences from the web version, both now closed
 
-**Share Tech Mono is not self-hosted, so it falls back in the bundle.**
-`web/index.html` asks Google for two families and the website repo's `fonts/`
-carries only PressStart2P and CourierPrime. A bundle may not fetch a font at
-runtime, so the four `css/` rules using Share Tech Mono fall through to the
-fallbacks they already declare (`'Courier New', monospace` in `base.css`, bare
-`monospace` in `layout.css` and `modals.css`). That is a visible difference, not a
-broken bundle. The real fix is adding `ShareTechMono-Regular.woff2` to the website
-repo, which would benefit the site too, since it currently depends on Google's CDN
-for it.
+**Share Tech Mono is self-hosted as of 2026-09-23, and the bundle matches the
+browser.** It had fallen back: `web/index.html` asks Google for two families,
+the website repo's `fonts/` carried only PressStart2P and CourierPrime, and a
+bundle may not fetch a font at runtime. So the four `css/` rules using it fell
+through to the fallbacks they already declare, which on a phone meant the body
+default and the five touchpad labels rendered in Menlo, with the credits screen
+naming a font the app had never loaded.
+
+`ShareTechMono-Regular.woff2` is in the website repo now (OFL 1.1, latin
+subset, 13.5KB), `FONTS` copies it, and the CDN transform emits a second
+`@font-face` beside Press Start 2P's. Verified in the built bundle rather than
+assumed: both files serve 200, `document.fonts` reports both loaded, and the
+family measures 129.6px against Courier New's 144.0 and a deliberately bogus
+control's 133.4, so it is the real face and not a silent substitution.
+
+**The website still takes both families off Google's CDN.** Moving it off
+touches `arcade/tetris/` as well, which uses the same two, and is a change of
+its own. What is here is the bundle's half.
 
 **The song is the clock, and iOS will interrupt it.** `js/main.js` drives the
 shift from a plain `<audio>` element's `ended` event and `currentTime`, chosen
