@@ -205,6 +205,26 @@ jobs:
           if grep -rInE '<(script|link|img|source|audio)[^>]*(src|href)="https?:' . ; then echo "loads over the network"; exit 1; fi
           echo "clean"
 
+      # The title card at every phone and iPad shape, measured in a real
+      # engine, because the failure it looks for has no other symptom.
+      # `.title-publisher` is absolutely positioned, so the flex column above
+      # it centres against a container that looks empty at the bottom and a
+      # card that grew runs underneath: no error, no warning, and nothing to
+      # see unless you open the app at the one size where it happens. Adding
+      # the cookie on 2026-09-23 cost 32px of a 29px margin and did exactly
+      # that at 812x375.
+      #
+      # Its own package.json, so a bundle build does not install a browser.
+      - name: Install the title-card check
+        working-directory: makemecookies/ios/tools/title-card
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: The title card fits
+        working-directory: makemecookies
+        run: node ios/tools/title-card/check.mjs --verbose
+
   # The committed app icon against the sprite table it is drawn from.
   #
   # The cookie's shape lives in web/js/pixels.js as SPR_COOKIE_BIG, which the

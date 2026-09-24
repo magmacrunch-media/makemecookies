@@ -284,6 +284,41 @@ is a `const`, so it is a global lexical binding rather than a property of
 `window`, reachable by bare name only after `config.js` has run, which is why
 the read is inside the handler rather than at the top of the file.
 
+## The title card is measured, not eyeballed
+
+`ios/tools/title-card/check.mjs` renders the built bundle in headless chromium
+and measures the card at seven shapes, three of them with safe-area insets. The
+`ios bundle` job runs it. `--verbose` prints the table on a pass too, which is
+the point as much as the pass is: a margin shrinking from 29px to 14px is worth
+seeing before it reaches zero.
+
+```
+node ios/package.mjs && node ios/tools/title-card/check.mjs --verbose
+```
+
+**It exists because this failure has no other symptom.** `.title-publisher` is
+absolutely positioned, so the flex column above it centres against a container
+that looks empty at the bottom, and a card that grew simply runs underneath.
+No error, no console warning, nothing to notice unless you open the app at the
+one size where it happens. Adding the cookie to the card on 2026-09-23 cost
+32px of vertical budget where there had been 29, and put the buttons 3px over
+the mark on an 812x375 phone with the home-indicator inset.
+
+It measures `ios/www/` rather than `web/`, for two reasons and the second is
+the one that matters: `web/index.html` names `../shared/` files this repo does
+not contain, so the page cannot be rendered from a checkout at all, and the
+insets only exist in the app. The no-inset cases cover the browser version,
+which is the same CSS with the insets at zero.
+
+**Playwright cannot fake `env(safe-area-inset-*)`.** `ios.css` reads those into
+`--safe-*` properties on `:root` and everything downstream uses the properties,
+so the check sets them inline on the documentElement and the body padding
+follows. That is what a notch does, one level down.
+
+Its own `package.json`, so `npm ci` for a bundle build does not pull a browser.
+Verified by removing the `position: static` rule and watching it fail at two
+shapes by 13px and 8px, then restoring it.
+
 ## Screenshots
 
 `tools/screenshots/` is the pair george-boole has: `shots.js` stages the app
