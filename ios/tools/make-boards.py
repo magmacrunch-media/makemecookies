@@ -28,12 +28,30 @@ The one editorial thing is the achievement titles, and `TITLES` is asserted to
 cover exactly the shim's ids: a ninth achievement cannot be added without either
 a title or a deliberate decision here.
 
-## Why --check exists, when george-boole's equivalent has none
+## What --check checks, and the one thing it deliberately does not
 
-The PNGs are committed. Drawing them and committing them are two acts where the
-script makes it look like one, and george-boole has no detector for the gap.
-This compares pixels rather than bytes, the way `make-cookie-pixel.py --check`
-does, so a re-encode by a different Pillow is not reported as drift.
+It re-runs every cross-check above -- the shim against itself, the shim against
+`config.js` -- and then asserts that an image exists for each id at 1024x1024
+with no alpha channel. All of that is portable, so CI can hold it.
+
+**It does not compare pixels, and that is not an oversight.** The first version
+did, copying `make-cookie-pixel.py --check`, and it failed on all nine images
+the first time CI ran it while passing locally. The icon is pixel art: no font,
+no antialiasing, byte-identical anywhere. These cards are Press Start 2P through
+FreeType, and FreeType does not rasterise identically across versions or
+platforms, so "the committed PNG is not what I would draw now" is true on any
+machine that is not the one that drew it. A check that fails for everyone except
+the last author is worse than no check.
+
+That leaves one gap, stated rather than papered over: editing the drawing code
+and not regenerating is invisible here. What is caught is the failure that
+actually matters, because an id is permanent and an image is not compiled --
+art that promises a number the game no longer uses. Change `STARS` without the
+shim's table and this fails by name.
+
+A consequence worth knowing: regenerating on a different OS rewrites all nine
+PNGs with no visible change. That is the same FreeType difference, and it is
+why the committed art should be redrawn on one machine rather than casually.
 """
 
 import argparse
@@ -41,7 +59,7 @@ import importlib.util
 import re
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageDraw
 
 IOS = Path(__file__).resolve().parent.parent
 REPO = IOS.parent
@@ -260,16 +278,26 @@ def card(title, subtitle, badge):
     return out.convert("RGB")
 
 
-def build_all():
+def plan():
+    """(prefix, [(path, title, subtitle, badge)]): all the parsing and every
+    cross-check, and no drawing.
+
+    Separated from the drawing so --check can run the checks without a font,
+    which also means it needs no website checkout.
+    """
     prefix, board, rows = read_shim()
     thresholds, tray_cap, bonus_label, star_labels = read_config()
     text = subtitles(rows, thresholds, tray_cap, bonus_label, star_labels)
 
-    images = [(f"leaderboards/{board}", card("SHIFT SCORE", "ONE SONG, ONE SHIFT", ""))]
+    items = [(f"leaderboards/{board}", "SHIFT SCORE", "ONE SONG, ONE SHIFT", "")]
     for ident, points, _description in rows:
         title, subtitle = text[ident]
-        images.append((f"achievements/{ident}", card(title, subtitle, f"{points} POINTS")))
-    return prefix, images
+        items.append((f"achievements/{ident}", title, subtitle, f"{points} POINTS"))
+    return prefix, items
+
+
+def draw(items):
+    return [(name, card(title, subtitle, badge)) for name, title, subtitle, badge in items]
 
 
 def contact_sheet(images, columns=5):
@@ -282,20 +310,22 @@ def contact_sheet(images, columns=5):
     return sheet
 
 
-def stale(path, fresh):
-    """Is the committed PNG not the image `fresh`? Pixels, not bytes.
+def unusable(path):
+    """Is the committed image missing, or not what App Store Connect accepts?
 
-    The same reasoning as make-cookie-pixel.py's: regenerating and asking git
-    fails the moment CI's Pillow encodes an identical image differently, and a
-    re-encode that moves no pixel is not drift.
+    Not a pixel comparison; see the header for why one cannot be portable.
     """
     if not path.exists():
-        print(f"{path.relative_to(REPO)} is missing")
+        print(f"MISS  {path.relative_to(REPO)}")
         return True
-    current = Image.open(path).convert("RGB")
-    if current.size != fresh.size or ImageChops.difference(current, fresh).getbbox():
-        print(f"{path.relative_to(REPO)} does not match the shim and web/js/config.js")
-        return True
+    with Image.open(path) as im:
+        if im.size != (SIZE, SIZE):
+            print(f"WRONG {path.relative_to(REPO)} is {im.size[0]}x{im.size[1]}, not {SIZE}x{SIZE}")
+            return True
+        # Apple rejects an upload carrying an alpha channel.
+        if "A" in im.getbands():
+            print(f"WRONG {path.relative_to(REPO)} has an alpha channel")
+            return True
     return False
 
 
@@ -306,17 +336,19 @@ def main():
                     help="exit 1 if the committed art does not match the game")
     args = ap.parse_args()
 
-    prefix, images = build_all()
+    # plan() is where every cross-check lives, so reaching this line at all
+    # means the shim agrees with itself and with web/js/config.js.
+    prefix, items = plan()
 
     if args.check:
-        drifted = 0
-        for name, image in images:
-            if stale(OUT / f"{name}.png", image):
-                drifted += 1
-        if drifted:
+        bad = sum(unusable(OUT / f"{name}.png") for name, *_rest in items)
+        if bad:
             raise SystemExit("run: python ios/tools/make-boards.py   and commit the result")
-        print(f"{len(images)} Game Center images match the shim and web/js/config.js")
+        print(f"{len(items)} Game Center images present, 1024x1024, no alpha")
+        print("  ids, points and thresholds agree with the shim and web/js/config.js")
         return
+
+    images = draw(items)
 
     for folder in ("leaderboards", "achievements"):
         (OUT / folder).mkdir(parents=True, exist_ok=True)

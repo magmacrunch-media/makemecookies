@@ -245,21 +245,7 @@ jobs:
     name: ios art
     runs-on: ubuntu-latest
     steps:
-      # The icon needs only the game: it is drawn from web/js/pixels.js and
-      # uses no font. The Game Center art needs the website too, for the
-      # self-hosted Press Start 2P and the publisher's mark, so this job takes
-      # the flat layout the bundle jobs use rather than a bare checkout.
-      - name: Check out the game
-        uses: actions/checkout@v7
-        with:
-          path: makemecookies
-
-      - name: Check out the website beside it
-        uses: actions/checkout@v7
-        with:
-          repository: magmacrunch-media/magmacrunch.com
-          path: website
-
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -267,15 +253,16 @@ jobs:
         run: pip install --quiet pillow
 
       - name: The icon still matches web/js/pixels.js
-        working-directory: makemecookies
         run: python ios/tools/make-cookie-pixel.py --check
 
-      # Catches both halves: art whose numbers no longer match web/js/config.js
-      # or the shim's table, and committed PNGs that were never redrawn after
-      # either moved. An id is permanent once created in App Store Connect and
-      # an image is not compiled, so nothing else here would notice.
+      # Checks the ids, points and thresholds against the shim and
+      # web/js/config.js, then that an image exists for each at 1024x1024 with
+      # no alpha. It draws nothing, so it needs neither the font nor the
+      # website checkout -- and it cannot compare pixels, because FreeType does
+      # not rasterise identically across platforms. The header says why at
+      # length; the short version is that the first version of this step failed
+      # on all nine images in CI while passing locally.
       - name: The Game Center art still matches the shim and the rules
-        working-directory: makemecookies
         run: python ios/tools/make-boards.py --check
 
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.
