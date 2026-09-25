@@ -257,12 +257,22 @@ Three things they know that are easy to learn the hard way:
 - **Judge an icon at 60px.** George Boole's was fine at 1024 and a murky blob
   on a home screen, and the redraw is what put `--sheet` in both files. It
   renders 180, 120 and 60 against a light and a dark wallpaper, masked.
-- **`scaleAspectFill` crops the launch image.** A portrait phone fills the
-  height from a square and shows a band 46% of the width; a landscape iPad
-  shows about the middle 75% of the height. Both scripts assert their art fits
-  inside those bands and refuse to write anything wider, because the asset
-  catalog previews the full square and would show you a wordmark that is
-  cropped in half on every phone.
+- **`scaleAspectFill` crops the launch image, and here it crops the HEIGHT.**
+  A square covers the view, so the axis the view is shorter on is the one that
+  survives only in part. `Info.plist` locks this game's iPhone to landscape, so
+  a 2868x1320 phone shows the full width and the middle **46% of the height**.
+  The width is cropped only by a portrait iPad, at about 75%. The script
+  asserts both before writing, because the asset catalog previews the full
+  square and would happily show you a wordmark that is cut in half on the
+  device.
+
+  **Those two limits were on the wrong axes until 2026-09-24.** This file was
+  written from george-boole's, whose phone is portrait, so it guarded the width
+  at 46% on a device that never crops the width and allowed 70% of the height
+  on one that shows 46%. The art passed the whole time, at 38% and 21%, which
+  is why nothing surfaced it: a guard can be pointed at the wrong axis and stay
+  green for as long as the art is small. HOUSE.md now states the rule by
+  orientation rather than by example.
 - **The same colours read differently at different coverage.** The icon is
   mostly cookie so its ground shows only where the gradient has fallen away;
   the splash is all ground, and the icon's stops came out as hot pink across a

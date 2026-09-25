@@ -15,13 +15,21 @@ the title screen reads and how the album art reads.
 
 ## Everything is sized as a fraction of the square, and that is the point
 
-`LaunchScreen.storyboard` scales this with `scaleAspectFill`, so a portrait
-phone fills the HEIGHT from a square image and crops the width to the device's
-aspect. A 2732 square on a 1320x2868 iPhone shows a band 46% of the width.
-Anything wider is cut off at both ends while looking perfect in the asset
+`LaunchScreen.storyboard` scales this with `scaleAspectFill`, so a square image
+covers the view and whichever axis the view is shorter on gets cropped.
+**This game's phone is landscape**, so the axis at risk is the HEIGHT: a 2732
+square on a 2868x1320 iPhone shows a band 46% of the height, full width.
+Anything taller is cut off top and bottom while looking perfect in the asset
 catalog, which is exactly the sort of gap this game's icon already had. So the
 text is laid out to a fraction and the fractions are asserted before the file
 is written.
+
+Both limits were on the wrong axes until 2026-09-24. This file was written from
+george-boole's, whose phone is portrait, so it guarded the width at 46% on a
+device that never crops the width and allowed 70% of the height on one that
+shows 46%. The art passed throughout and still does, at 38% and 21%, which is
+why nothing surfaced it: the block was small enough to clear both limits either
+way round. See the constants below for the full derivation.
 """
 
 import argparse
@@ -62,12 +70,25 @@ BUTTER = (255, 201, 60)         # --butter, for the X4
 MINT = cookie.MINT              # --sprinkle, for the tagline
 PUBLISHER = (154, 123, 162)     # --subtext: quiet, the way the title card's is
 
-# The narrowest band any current iPhone shows is 46% of the square's width.
-# Refuse to write art wider than this, with a margin.
-SAFE_WIDTH = 0.44
-# A landscape iPad fills the width and crops top and bottom, showing about the
-# middle 75% of the height.
-SAFE_HEIGHT = 0.70
+# Which axis gets cropped depends on the orientation, and this game is
+# LANDSCAPE on iPhone. That inverts both limits relative to george-boole, whose
+# phone is portrait, and they were inverted here until 2026-09-24: this file
+# carried george-boole's numbers and guarded the width on a device that never
+# crops the width.
+#
+# `scaleAspectFill` from a square covers the view, so the shorter side of the
+# view is the fraction of the square that survives, on that side's axis:
+#
+#   iPhone landscape   2868x1320, 0.46  ->  full width, middle 46% of HEIGHT
+#   iPad portrait      1024x1366, 0.75  ->  middle 75% of WIDTH, full height
+#   iPad landscape     1366x1024, 0.75  ->  full width, middle 75% of height
+#
+# Info.plist locks iPhone to landscape both ways up and leaves iPad on all
+# four, so the binding cases are the first two. Height is cropped hardest by
+# the landscape phone at 46%; width is cropped only by the portrait iPad, at
+# 75%. Both carry a margin.
+SAFE_WIDTH = 0.72
+SAFE_HEIGHT = 0.44
 
 
 def website():
@@ -171,16 +192,18 @@ def build_splash(size=2732):
     if widest > size * SAFE_WIDTH:
         raise SystemExit(
             f"the splash block is {widest / size:.0%} of the square's width, past "
-            f"{SAFE_WIDTH:.0%}. scaleAspectFill would crop it on a phone."
+            f"{SAFE_WIDTH:.0%}. A portrait iPad would crop it: the phone is landscape "
+            f"and never crops the width."
         )
-    print(f"  width  {widest / size:.0%} of the square (a phone shows 46%)")
+    print(f"  width  {widest / size:.0%} of the square (a portrait iPad shows 75%)")
 
     if total > size * SAFE_HEIGHT:
         raise SystemExit(
             f"the splash block is {total / size:.0%} of the square's height, past "
-            f"{SAFE_HEIGHT:.0%}. A landscape iPad shows about the middle 75%."
+            f"{SAFE_HEIGHT:.0%}. A landscape phone shows about the middle 46%, and "
+            f"this app's phone is landscape only."
         )
-    print(f"  height {total / size:.0%} of the square (an iPad shows 75%)")
+    print(f"  height {total / size:.0%} of the square (a landscape phone shows 46%)")
 
     out = Image.alpha_composite(base, cookie.bloom(art, radius=size // 90, strength=0.8))
     out = Image.alpha_composite(out, cookie.bloom(art, radius=size // 300, strength=1.0))
