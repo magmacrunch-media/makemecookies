@@ -179,6 +179,7 @@ nowhere.
 | `tools/make-cookie-pixel.py` | the app icon, light and dark, plus the `Contents.json` entry pairing them |
 | `tools/make-splash.py` | the launch image, written to all three filenames Capacitor registers |
 | `tools/make-boards.py` | the Game Center art, one square per achievement and one for the leaderboard, into `store/game-center/` |
+| `tools/make-logo.py` | the publisher's mark, `web/img/mc-logo.png`, derived from the website's logo |
 
 Neither retypes anything. The icon parses **both** the `PAL` table and the
 `SPR_COOKIE_BIG` sprite out of `web/js/pixels.js`, so a cookie recoloured *or
@@ -199,8 +200,34 @@ threshold the game does not use. Its `TITLES` map is the one editorial part and
 is asserted to cover exactly the shim's ids, so a ninth achievement cannot be
 added by accident.
 
-It needs the website checkout for the font and mark, which is why `ios-art`
-takes the flat layout rather than a bare checkout.
+Drawing it needs the website for the font; `--check` draws nothing and needs
+only the game.
+
+**All four generators have a `--check` and `ios-art` runs every one**, as of
+2026-09-24. Until then only the icon did, and a PNG is not compiled, so a stale
+launch image or mark would have gone unremarked indefinitely. They check
+different things because the art is different in kind:
+
+| | What `--check` does |
+|---|---|
+| `make-cookie-pixel.py` | compares **pixels** against a fresh draw |
+| `make-splash.py` | redraws the launch image for its crop assertions and discards it, then checks the three files exist, are 2732x2732, and are one image |
+| `make-boards.py` | every cross-check against the shim and `web/js/config.js`, then that each id has a 1024x1024 image with no alpha |
+| `make-logo.py` | compares **RGBA** pixels against what the website's logo derives to |
+
+The asymmetry is the font. The icon and the mark are pixel work, identical on
+any machine. The launch image and the Game Center cards are Press Start 2P
+through FreeType, which does not rasterise identically across versions or
+platforms, so a pixel comparison of either is true only on whichever machine
+drew it last. `make-boards.py` established that in CI at the cost of a red run,
+and its header has the detail.
+
+`make-splash.py` and `make-logo.py` both read the website, which is why
+`ios-art` takes the flat layout rather than a bare checkout. `make-logo.py`'s
+is the only check here that crosses a repository boundary, and the reason it
+compares RGBA is that the mark is uniform white with the drawing carried
+entirely in its alpha channel: an RGB comparison would be white against white
+and could never fail.
 
 The shape moved into `pixels.js` on 2026-09-22, when the title card grew a hero
 cookie and would otherwise have been a third one. It had been computed in

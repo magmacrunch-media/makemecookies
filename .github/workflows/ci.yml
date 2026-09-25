@@ -245,7 +245,21 @@ jobs:
     name: ios art
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      # The flat layout, which is make-splash.py's first font candidate
+      # (../website from the game root) and the one the bundle jobs already
+      # use. The icon and the Game Center art need nothing but the game; the
+      # launch image and the publisher's mark both read the website.
+      - name: Check out the game
+        uses: actions/checkout@v7
+        with:
+          path: makemecookies
+
+      - name: Check out the website beside it
+        uses: actions/checkout@v7
+        with:
+          repository: magmacrunch-media/magmacrunch.com
+          path: website
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -253,7 +267,29 @@ jobs:
         run: pip install --quiet pillow
 
       - name: The icon still matches web/js/pixels.js
+        working-directory: makemecookies
         run: python ios/tools/make-cookie-pixel.py --check
+
+      # Draws the launch image for its assertions and throws it away. The block
+      # is measured against the band a phone shows, and both the font and the
+      # mark it measures live in the website repo, so a change over there could
+      # crop the wordmark with nothing here looking. It cannot compare the
+      # result to the committed PNGs, because FreeType does not rasterise
+      # identically across platforms; it checks they exist, are 2732x2732, and
+      # are one image.
+      - name: The launch image still fits the crop
+        working-directory: makemecookies
+        run: python ios/tools/make-splash.py --check
+
+      # The one check here that crosses a repository boundary: the source is
+      # the website's MClogoNoText.png and the result is committed in this
+      # repo, so a logo redrawn over there leaves web/img/mc-logo.png stale
+      # with nothing on either side looking. The comparison is RGBA, because
+      # the mark is uniform white with the drawing in its alpha channel and an
+      # RGB one would be white against white.
+      - name: The publisher's mark still derives from the website's logo
+        working-directory: makemecookies
+        run: python ios/tools/make-logo.py --check
 
       # Checks the ids, points and thresholds against the shim and
       # web/js/config.js, then that an image exists for each at 1024x1024 with
@@ -263,6 +299,7 @@ jobs:
       # length; the short version is that the first version of this step failed
       # on all nine images in CI while passing locally.
       - name: The Game Center art still matches the shim and the rules
+        working-directory: makemecookies
         run: python ios/tools/make-boards.py --check
 
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.

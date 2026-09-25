@@ -24,6 +24,7 @@ text is laid out to a fraction and the fractions are asserted before the file
 is written.
 """
 
+import argparse
 import importlib.util
 from pathlib import Path
 
@@ -187,15 +188,64 @@ def build_splash(size=2732):
     return out.convert("RGB")
 
 
+# Capacitor registers the same image at 1x, 2x and 3x, and all three filenames
+# are referenced by Contents.json.
+NAMES = ("splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png")
+
+
 def main():
+    ap = argparse.ArgumentParser(description="Draw the makemecookies!x4 launch image.")
+    ap.add_argument("--check", action="store_true",
+                    help="exit 1 if the committed launch image is missing, malformed, or would crop")
+    args = ap.parse_args()
+
     splash_dir = ASSETS / "Splash.imageset"
     if not splash_dir.is_dir():
         raise SystemExit(f"asset catalog not found under {ASSETS}. Run `npx cap add ios` first.")
 
+    if args.check:
+        # Drawn for its assertions, and the image is then thrown away.
+        #
+        # That is the point rather than a shortcut. build_splash() sizes every
+        # line from SAFE_WIDTH and then measures the laid-out block against the
+        # band a phone actually shows, and both the font and the publisher's
+        # mark it measures come from the WEBSITE repo. Either one changed over
+        # there moves the metrics and could crop the wordmark, with nothing in
+        # this repo looking. This is what looks.
+        #
+        # What it cannot do is compare the drawn image to the committed one.
+        # Press Start 2P goes through FreeType, which does not rasterise
+        # identically across versions or platforms, so that comparison holds
+        # only on the machine that drew it last. make-boards.py tried exactly
+        # that and went red in CI on all nine of its images while passing here.
+        build_splash()
+
+        bad = 0
+        for name in NAMES:
+            path = splash_dir / name
+            if not path.exists():
+                print(f"MISS  {path.relative_to(REPO)}")
+                bad += 1
+                continue
+            with Image.open(path) as im:
+                if im.size != (2732, 2732):
+                    print(f"WRONG {path.relative_to(REPO)} is {im.size[0]}x{im.size[1]}, not 2732x2732")
+                    bad += 1
+
+        # Three filenames, one image. Comparing them to each other is portable
+        # where comparing them to a fresh draw is not, and a half-finished
+        # regeneration is exactly how they would come apart.
+        if not bad and len({(splash_dir / n).read_bytes() for n in NAMES}) != 1:
+            print(f"WRONG the {len(NAMES)} splash files are not the same image")
+            bad += 1
+
+        if bad:
+            raise SystemExit("run: python ios/tools/make-splash.py   and commit the result")
+        print(f"launch image present as {len(NAMES)} identical files, and fits the crop")
+        return
+
     splash = build_splash()
-    # Capacitor registers the same image at 1x, 2x and 3x, and all three
-    # filenames are referenced by Contents.json.
-    for name in ("splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"):
+    for name in NAMES:
         splash.save(splash_dir / name)
         print(f"wrote {splash_dir.name}/{name}  {splash.size[0]}x{splash.size[1]}")
 
