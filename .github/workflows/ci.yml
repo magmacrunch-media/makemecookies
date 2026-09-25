@@ -346,6 +346,15 @@ jobs:
       - name: The Game Center ids and art are fit to create
         run: node engines/hypnopompia/tools/check-game-center.mjs games/makemecookies/ios
 
+      # The launch image's crop limits against the orientations Info.plist
+      # actually declares. This repo is why the check exists: it took
+      # george-boole's two constants unchanged and guarded the width on a phone
+      # locked to landscape, which never crops the width, from 2026-09-19 to
+      # 2026-09-24. It was green the whole time, because the art was small
+      # enough to clear both limits either way round.
+      - name: The launch-image crop limits match the declared orientations
+        run: node engines/hypnopompia/tools/check-launch-crop.mjs games/makemecookies/ios
+
   # The app itself, and the only thing that has ever compiled it. The two
   # vendored Swift files and PrivacyInfo.xcprivacy were wired into project.pbxproj
   # by script on a machine with no Xcode, and a file the project fails to list is

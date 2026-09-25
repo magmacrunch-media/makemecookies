@@ -87,8 +87,8 @@ PUBLISHER = (154, 123, 162)     # --subtext: quiet, the way the title card's is
 # four, so the binding cases are the first two. Height is cropped hardest by
 # the landscape phone at 46%; width is cropped only by the portrait iPad, at
 # 75%. Both carry a margin.
-SAFE_WIDTH = 0.72
-SAFE_HEIGHT = 0.44
+CROP_WIDTH = 0.72
+CROP_HEIGHT = 0.44
 
 
 def website():
@@ -189,18 +189,18 @@ def build_splash(size=2732):
         d.text(((size - w) / 2, y), text, font=font, fill=colour)
         y += font.size + (gaps[i] if i < len(gaps) else 0)
 
-    if widest > size * SAFE_WIDTH:
+    if widest > size * CROP_WIDTH:
         raise SystemExit(
             f"the splash block is {widest / size:.0%} of the square's width, past "
-            f"{SAFE_WIDTH:.0%}. A portrait iPad would crop it: the phone is landscape "
+            f"{CROP_WIDTH:.0%}. A portrait iPad would crop it: the phone is landscape "
             f"and never crops the width."
         )
     print(f"  width  {widest / size:.0%} of the square (a portrait iPad shows 75%)")
 
-    if total > size * SAFE_HEIGHT:
+    if total > size * CROP_HEIGHT:
         raise SystemExit(
             f"the splash block is {total / size:.0%} of the square's height, past "
-            f"{SAFE_HEIGHT:.0%}. A landscape phone shows about the middle 46%, and "
+            f"{CROP_HEIGHT:.0%}. A landscape phone shows about the middle 46%, and "
             f"this app's phone is landscape only."
         )
     print(f"  height {total / size:.0%} of the square (a landscape phone shows 46%)")
@@ -230,7 +230,7 @@ def main():
         # Drawn for its assertions, and the image is then thrown away.
         #
         # That is the point rather than a shortcut. build_splash() sizes every
-        # line from SAFE_WIDTH and then measures the laid-out block against the
+        # line from its own fractions and measures the laid-out block against the
         # band a phone actually shows, and both the font and the publisher's
         # mark it measures come from the WEBSITE repo. Either one changed over
         # there moves the metrics and could crop the wordmark, with nothing in
