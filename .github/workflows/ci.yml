@@ -18,6 +18,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Attach the Simulator build to a public prerelease"
+        type: boolean
+        default: false
 
 jobs:
   web:
@@ -369,6 +374,11 @@ jobs:
   ios-build:
     name: ios build
     runs-on: macos-latest
+    # The repository default is read, so the publish step at the end of this job
+    # 403s without this. It is on the job rather than the workflow because no
+    # other job here writes anything.
+    permissions:
+      contents: write
     steps:
       - name: Check out the game
         uses: actions/checkout@v7
@@ -461,3 +471,116 @@ jobs:
             exit 1
           fi
           echo "both present (plugin in $(basename "$found"))"
+
+      # THE ZIP A TESTER INSTALLS, and the manifest describing it. This is the
+      # same App.app the two checks above just read rather than a second build
+      # of it, so what someone installs is what passed them.
+      #
+      # The archiving, the naming and the manifest live in the shell rather than
+      # here: hypnopompia is already checked out beside this repo to build the
+      # bundle at all, and four projects need the identical treatment, so the
+      # alternative was forty lines of YAML copied four times and then drifting.
+      # Its header explains the ditto-not-zip and read-it-out-of-the-bundle
+      # decisions. The id mirrors block-island-simulator's
+      # bis-<date>-<game>-<engine>, with the shell's sha standing in for the
+      # engine's, because the vendored plugin and the whole bundle pipeline come
+      # from there: two zips from one game commit are not necessarily the same
+      # app.
+      - name: Package the simulator app
+        run: |
+          node hypnopompia/tools/package-sim.mjs \
+            --app "$RUNNER_TEMP/derived/Build/Products/Debug-iphonesimulator/App.app" \
+            --out "$RUNNER_TEMP/sim" \
+            --repo makemecookies \
+            --name makemecookies
+
+      # The zip and build.json together, because hypnopompia's deploy-sim.mjs
+      # reads the manifest to build the download page and neither file is much
+      # use to it alone. 14 days, the same retention as the
+      # block-island-simulator packages.
+      #
+      # Note an Actions artifact needs a signed-in GitHub account to download
+      # even from a public repository. That is what the release step below and
+      # the Pi page are each for, by different routes.
+      - name: Upload the simulator app
+        uses: actions/upload-artifact@v7
+        with:
+          name: makemecookies-sim
+          path: ${{ runner.temp }}/sim
+          if-no-files-found: error
+          retention-days: 14
+          # Already compressed; compressing it again only costs time.
+          compression-level: 0
+
+      # Dispatch-only and off by default, so pushing does not mint public
+      # downloads. Releases are anonymous URLs on a public repo, so the tag is
+      # the thing that gets pasted into Discord.
+      #
+      # A dated immutable tag rather than a rolling one: two testers saying
+      # different things about "the latest build" is the failure worth spending
+      # a tag on. A rolling link instead is this step with a fixed TAG and
+      # `gh release upload --clobber`.
+      #
+      # This pushes a tag, which does not retrigger this workflow: the push
+      # trigger above is filtered to branches.
+      - name: Publish it as a prerelease
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # SIM_* come from package-sim.mjs via GITHUB_ENV, so this page and the
+          # download page on the Pi state the same facts from the same source.
+          # The website's sha is not among them: the manifest describes the app,
+          # and that is a fact about how the bundle was built.
+          ZIP="$SIM_ZIP"; GAME="$SIM_GAME"; SHELL_SHA="$SIM_SHELL"
+          ARCHS="$SIM_ARCHS"; MINOS="$SIM_MIN_OS"
+          SITE=$(git -C website rev-parse --short=8 HEAD)
+          tag="sim-$(date -u +%Y%m%d)-$GAME"
+          notes="$RUNNER_TEMP/notes.md"
+
+          # The release page is the instructions: whoever follows the link has
+          # not read this repository and is not going to.
+          cat > "$notes" <<MD
+          A build of makemecookies!x4 for the **iOS Simulator**, for testing on a Mac.
+          No Apple account, no developer membership and no signing are involved.
+
+          Game \`$GAME\`, iOS shell \`$SHELL_SHA\`, website \`$SITE\`.
+
+          ## Running it
+
+          1. Install **Xcode** from the Mac App Store, and open it once so it finishes installing its components.
+          2. Download \`$ZIP\` below and unzip it. You get \`App.app\`.
+          3. In Xcode's menu bar: **Xcode > Open Developer Tool > Simulator**. Boot any iPhone running **iOS $MINOS or newer**.
+          4. Drag \`App.app\` onto the simulator window.
+
+          Or in a terminal, with a simulator already booted:
+
+          \`\`\`
+          xcrun simctl install booted App.app
+          xcrun simctl launch booted com.magmacrunch.makemecookies
+          \`\`\`
+
+          This build contains: \`$ARCHS\`. That runs on an Apple Silicon Mac; an Intel Mac needs an x86_64 slice.
+
+          ## What this build cannot show you
+
+          - **Game Center.** It is built unsigned and without entitlements, so the leaderboard and achievements do nothing. That needs a paid Apple Developer membership and is not done yet.
+          - **Haptics.** The Simulator has no taptic engine.
+          - **Real performance, and a real touchscreen.** A simulator is neither.
+
+          If installing fails complaining the bundle is damaged, macOS has quarantined the download: \`xattr -dr com.apple.quarantine App.app\`
+          MD
+
+          # --target pins the tag to the commit this zip was built from. Without
+          # it gh tags the default branch's head, which is the same thing only
+          # until somebody pushes while the job is running.
+          gh release create "$tag" "$RUNNER_TEMP/sim/$ZIP" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Simulator build $tag" \
+            --notes-file "$notes" \
+            --prerelease
+          url=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
+          echo "### Simulator build published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"

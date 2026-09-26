@@ -100,6 +100,60 @@ george-boole pins **8.5.1**, frozen at its 2026-09-17 verification. The two
 games disagreeing is the arrangement working: each holds what it was actually
 built against, and neither moves because the other did.
 
+## The Simulator build is kept now, so a tester needs no checkout and no account
+
+`ios-build` compiled the app and threw it away. It still compiles it the same
+way, and now keeps it. **The archiving is not done here**:
+`hypnopompia/tools/package-sim.mjs` does it, because four projects need the
+identical treatment and all four already check the shell out beside themselves.
+It writes `makemecookies-sim-<date>-<game sha>-<shell sha>.zip` and a
+`build.json` beside it, and both go into the one `makemecookies-sim` artifact,
+kept 14 days. The id mirrors block-island-simulator's
+`bis-<date>-<game>-<engine>`, and the shell's sha is in it because the vendored
+plugin and the whole bundle pipeline come from hypnopompia, so two zips from one
+game commit are not necessarily the same app.
+
+**An Actions artifact needs a signed-in GitHub account to download, even from a
+public repository**, so the artifact alone is not something to hand a tester.
+Two things take it further, and they are not redundant with each other:
+
+| | |
+|---|---|
+| The Pi | `hypnopompia/tools/deploy-sim.mjs` pulls the artifact, renders a download page from `build.json`, and puts it on magmacrunch-server at an unlisted path. `--announce` posts the link to #app-development. This is the route that works for all four projects, including the two private ones, where a release asset would need repository access |
+| A prerelease | dispatch this workflow with **publish** checked and it cuts a dated prerelease with the zip attached, which is an anonymous URL because this repo is public. george-boole can do the same; crunchscope and gratinglab cannot |
+
+The overlap is deliberate for now and may not be worth keeping. If the Pi page
+becomes the only route anybody actually uses, the publish step and its
+`contents: write` are the thing to delete, not the artifact, which `deploy-sim`
+needs either way.
+
+**`build.json` is the reason the page cannot lie.** The architectures, the
+minimum iOS, the bundle id and the display name are read out of the built bundle
+with `lipo` and `plutil` at package time, never from `project.pbxproj` or
+`capacitor.config.json`. A deployment target raised without a rebuild, or a name
+changed and never synced, would otherwise reach a tester as a page describing an
+app that does not exist.
+
+What a tester needs is Xcode and nothing else: no clone, no Node, no Capacitor,
+no signing, no Apple ID, no UDID, no paid membership. They unzip and drag
+`App.app` onto a booted simulator, or `xcrun simctl install booted App.app`. The
+release notes are written by the job and say all of this, because whoever
+follows the link has not read this file.
+
+**It cannot test Game Center**, which is the one thing worth saying twice. The
+build is unsigned with `CODE_SIGNING_ALLOWED=NO` and carries no entitlements, so
+the leaderboard and the achievements do nothing in it, and the shim's failure
+path is what runs. Haptics are equally absent, the Simulator having no taptic
+engine. So this zip covers the game, the layout, the title card at a real device
+shape and the ten transforms `package.mjs` applies, and stops exactly where the
+paid membership starts. **Do not read a clean report from one of these as the
+native seam working.**
+
+Publishing writes a tag, which does not retrigger the workflow: the `push`
+trigger is filtered to branches. The job carries `permissions: contents: write`
+for the same reason the step needs saying at all, the repository default being
+read.
+
 ## The Game Center plugin is vendored, and the entitlement is declared
 
 `App/App/App/GameCenterPlugin.swift` and `GameViewController.swift` come from
