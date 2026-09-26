@@ -128,6 +128,20 @@ CI is unaffected. A simulator build signs ad hoc and never consults the file, th
 `ios-build` job passes `CODE_SIGNING_ALLOWED=NO`, and what it asserts is still
 only that the plugin compiles and registers.
 
+**That claim was checked rather than reasoned, on 2026-09-25.** The app was
+built on the Mac with the entitlement in place, installed to an iPhone 17 Pro
+simulator and launched: it runs, the title card draws, the orientation lock
+holds and the content clears the Dynamic Island. So the entitlement costs the
+simulator path nothing, which is what makes it free to commit ahead of the
+account.
+
+What that run cannot say anything about is the half the entitlement exists for.
+The simulator has no Taptic Engine and no Game Center sign-in, and the shims
+return `null` for a missing plugin rather than failing, so both are silently
+inert there exactly as they are in a browser. **A green simulator launch is not
+evidence that Game Center or haptics work**, and it never will be. That needs a
+device.
+
 Added 2026-09-24. This section said the opposite until then, and both games
 answering one question two ways is what settled it.
 
