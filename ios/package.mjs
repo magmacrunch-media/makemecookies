@@ -331,7 +331,7 @@ edit(state, 'credits: the layers the app actually runs on', (html) =>
   html.replace(
     /<a href="https:\/\/github\.com\/magmacrunch-media\/adenosine">adenosine<\/a>\s*\n?\s*&middot; Press Start 2P &middot; Share Tech Mono/,
     '<a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>\n'
-      + '          &middot; <a href="https://github.com/magmacrunch-media/hypnopompia">hypnopompia</a>\n'
+      + '          &middot; <a href="https://magmacrunch.com/ware/hypnopompia/">hypnopompia</a>\n'
       + '          &middot; <a href="https://capacitorjs.com">Capacitor</a>'
   )
 );
