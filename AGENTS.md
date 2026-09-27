@@ -60,6 +60,35 @@ A shift is one play of the track, and everything is derived from that:
 Shortening or replacing the track needs nothing else changed. Hardcoding a
 length would.
 
+**So the HUD draws the clock rather than counting it.** `#shift-fill` is a bar
+that empties over the shift; there is no `0:51` on screen. Three reasons, and
+the first is the one that generalises:
+
+- A number there was a *second* clock, more precise than the one the player can
+  already hear and saying the same thing. The bar and the music agree by
+  construction; a readout invites reading instead of listening.
+- Its value was never designed. `st.shiftMs` is whatever `music.duration`
+  reports, so the digits were an artifact of the encode — which is exactly why
+  `0:51` read as an arbitrary number, and why re-encoding the track would have
+  silently changed a number the page presented as a rule.
+- Not knowing exactly how long is left is worth something. The end of a shift
+  is a real bet (`BOX_MULT` pays double for a full box of four), and it is a
+  better bet made by ear than by arithmetic. The ramp already plateaus at the
+  end so those seconds are survivable rather than a coin flip.
+
+It empties rather than filling, matching the mixer's ready window and the
+oven's golden window in `js/render.js`: on this page, time you have left is
+always a meter going down. `wii/source/render.c` fills instead. The two need
+not agree — the web build is the one with five station meters beside it — but
+do not "fix" one to match the other without reading this.
+
+**`#hud-time` still exists, hidden, and `noteAudioProblem()` reveals it.** With
+no music there is no audible clock at all: the shift falls back to the wall
+clock and a player who cannot hear it is guessing rather than usefully unsure.
+That is the one case the digits earn their place, and it is the case iOS hit
+for months. Anything that changes how the bar is fed should check that path,
+because nothing about it is visible in a healthy run.
+
 ## Audio needs both `.ogg` and `.mp3`
 
 `js/main.js` chooses at load time from `canPlayType`:

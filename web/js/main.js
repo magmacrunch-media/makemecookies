@@ -57,6 +57,14 @@ function noteAudioProblem(why) {
   console.warn('makemecookies audio:', why);
   const el = document.getElementById('audio-warning');
   if (el) { el.textContent = why; el.hidden = false; }
+
+  // The HUD shows the shift as a bar and no number, which is the right trade
+  // while the song is playing: the bar and the music say the same thing, and
+  // the music says it better. With no music there is no audible clock at all,
+  // so this is the one case where the player is genuinely left guessing rather
+  // than usefully unsure, and the digits come back for it.
+  const time = document.getElementById('hud-time');
+  if (time) time.hidden = false;
 }
 
 const chosenSource = pickMusicSource();
@@ -145,14 +153,32 @@ const FRAME_MS = 1000 / 30;
 const elScore = document.getElementById('hud-score');
 const elShipped = document.getElementById('hud-shipped');
 const elTime = document.getElementById('hud-time');
+const elFill = document.getElementById('shift-fill');
 const elRush = document.getElementById('hud-rush');
+
+// The last ten seconds. One threshold, the same one the old numeric readout
+// turned red at, and it is also roughly where the song's outro begins.
+const URGENT_S = 10;
 
 function updateHUD() {
   elScore.textContent = st.score.toLocaleString();
   elShipped.textContent = st.shipped;
+
+  // Time REMAINING, not elapsed: the bar empties. See index.html for why it
+  // is a bar at all, and layout.css for why its width is never transitioned.
+  const frac = 1 - clamp01(st.elapsed / st.shiftMs);
   const left = Math.max(0, Math.ceil((st.shiftMs - st.elapsed) / 1000));
+  const urgent = left <= URGENT_S;
+
+  elFill.style.width = (frac * 100).toFixed(2) + '%';
+  elFill.classList.toggle('urgent', urgent);
+
+  // Kept current whether or not it is visible, so the moment
+  // noteAudioProblem() unhides it the number is already right rather than a
+  // frame stale - and nothing has to know the order those two happen in.
   elTime.textContent = '0:' + String(left).padStart(2, '0');
-  elTime.classList.toggle('urgent', left <= 10);
+  elTime.classList.toggle('urgent', urgent);
+
   elRush.textContent = st.rush >= 0 ? 'RUSH x' + (st.rush + 1) : '';
 }
 
@@ -297,6 +323,13 @@ function endShift() {
 
   music.pause();
   const bonus = settleShift(st);
+
+  // The loop stops here, and it stops 20ms short of the end (see the caller),
+  // so the last width updateHUD wrote is a fraction of a percent rather than
+  // none: a hairline of bar that sits behind the end-of-shift card and is
+  // still there when it is dismissed. The shift is over, so the bar is empty.
+  elFill.style.width = '0%';
+  elFill.classList.remove('urgent');
 
   // The last moments of the shift, then the shift itself. Emitted before
   // the modal goes up, so a shim can react while the card is still

@@ -78,6 +78,67 @@ header .byline {
 .hud-value.pink { color: var(--neon); text-shadow: var(--glow-neon); }
 .hud-value.urgent { color: #FF3B3B; text-shadow: 0 0 8px #FF3B3B; }
 
+/* ── The shift clock ────────────────────────────────────────────────
+   Full width rather than a third hud-cell, and that is the phone talking:
+   the cell it replaces asked for 120px of a row that already hides a word
+   to fit ("COOKIES SHIPPED" -> "SHIPPED", below). The iOS bundle is this
+   page, so the narrow layout is the app's layout. */
+
+.shift {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The label sits beside the track here, not above a value. */
+.shift .hud-label { margin-bottom: 0; }
+
+.shift-track {
+  flex: 1;
+  height: 10px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+}
+
+.shift-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--butter);
+  box-shadow: var(--glow-butter);
+  /* Width is set every frame from the clock, so it must not be animated -
+     a transition on it would lag the music. Colour may be. */
+  transition: background-color 180ms linear, box-shadow 180ms linear;
+}
+
+/* The last ten seconds, which is the threshold the number turned red at.
+   The pulse is what replaces being able to read the digits: a colour is a
+   state, a blink is a clock. */
+.shift-fill.urgent {
+  background: #FF3B3B;
+  box-shadow: 0 0 8px #FF3B3B;
+  animation: shift-urgent 500ms steps(2, end) infinite;
+}
+
+@keyframes shift-urgent { 50% { opacity: 0.4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Red alone still says it, and the bar is still visibly short. */
+  .shift-fill.urgent { animation: none; }
+}
+
+/* Only ever seen when the music failed, so it is a readout rather than part
+   of the HUD's rhythm. Monospaced digits keep the bar from twitching as it
+   counts down. */
+.shift-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--butter);
+  text-shadow: var(--glow-butter);
+}
+.shift-time.urgent { color: #FF3B3B; text-shadow: 0 0 8px #FF3B3B; }
+
 #hud-rush {
   font-family: 'Press Start 2P', monospace;
   font-size: 11px;
@@ -214,7 +275,7 @@ header .byline {
   #app { width: 100vw; padding: 10px 0 20px; gap: 8px; }
   #line { width: 100vw; }
   .stage { border-left: none; border-right: none; }
-  .hud, .controls, .touchpad { padding: 0 6px; }
+  .hud, .shift, .controls, .touchpad { padding: 0 6px; }
   header h1 { font-size: 15px; }
   header .byline { font-size: 8px; letter-spacing: 2px; }
   .hud-cell { min-width: 0; flex: 1; padding: 5px 6px; }
@@ -297,6 +358,9 @@ header .byline {
   .hud-cell { padding: 10px 6px; }
   .hud-label { font-size: 9px; margin-bottom: 8px; }
   .hud-value { font-size: 24px; }
+  /* Same argument as the line above, and the bar is the readout that is
+     glanced at most: it is the only one you can read without focusing. */
+  .shift-track { height: 14px; }
 }
 
 /* ── Short viewports (landscape phones) ─────────────────────────────
@@ -328,6 +392,8 @@ header .byline {
   .hud-cell { padding: 3px 10px; min-width: 78px; }
   .hud-label { font-size: 7px; margin-bottom: 2px; }
   .hud-value { font-size: 14px; }
+  /* Every pixel here is one the board does not get, and 7px is still a bar. */
+  .shift-track { height: 7px; }
   #hud-rush { font-size: 9px; min-height: 10px; }
   /* The shared chat bubble is fixed bottom-right and in landscape it covered
      24% of SHIP - the button pressed most, and pressed in a hurry. Simply
