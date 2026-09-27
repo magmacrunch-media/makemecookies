@@ -46,7 +46,7 @@
 </style>
 <link rel="stylesheet" href="css/base.css?v=abf25d69">
 <link rel="stylesheet" href="css/layout.css?v=7cfa681d">
-<link rel="stylesheet" href="css/modals.css?v=92038100">
+<link rel="stylesheet" href="css/modals.css?v=29788bfe">
 <link rel="stylesheet" href="css/title.css?v=7fbb830c">
 
 </head>
@@ -250,12 +250,18 @@
   <div class="modal">
     <h2>BEST SHIFTS</h2>
     <div class="modal-sub">magmacrunch arcade</div>
-    <table class="scores-table">
-      <thead>
-        <tr><th>#</th><th>WHO</th><th>SCORE</th><th>SHIPPED</th></tr>
-      </thead>
-      <tbody id="scores-tbody"></tbody>
-    </table>
+    <!-- The rows scroll, the heading and CLOSE do not. Ten rows plus a header
+         come to 459px, and a landscape phone has about 381px to give: without
+         this the whole card scrolls and the button you need is the part off
+         the bottom. Only constrained on short viewports, in modals.css. -->
+    <div class="scores-scroll">
+      <table class="scores-table">
+        <thead>
+          <tr><th>#</th><th>WHO</th><th>SCORE</th><th>SHIPPED</th></tr>
+        </thead>
+        <tbody id="scores-tbody"></tbody>
+      </table>
+    </div>
     <div class="controls">
       <button class="btn mint" id="btn-close-scores">CLOSE</button>
     </div>

@@ -346,10 +346,10 @@ Three things they know that are easy to learn the hard way:
   the splash is all ground, and the icon's stops came out as hot pink across a
   whole screen. The splash carries its own, darker.
 
-## The two shims, and the only npm plugin in the app
+## The three shims, and the only npm plugin in the app
 
-`shim/gamekit.js` and `shim/haptics.js`, injected by `package.mjs` after the
-ScoreClient bootstrap
+`shim/gamekit.js`, `shim/haptics.js` and `shim/bests.js`, injected by
+`package.mjs` after the ScoreClient bootstrap
 and therefore before `js/moments.js` and `js/main.js`. Script order is the only
 thing guaranteeing a listener is registered before anything can dispatch, which
 is why the anchor is the bootstrap line rather than the game's own scripts.
@@ -415,6 +415,40 @@ One thing is read from the game rather than from an event: `TRAY_CAP`, for the
 is a `const`, so it is a global lexical binding rather than a property of
 `window`, reachable by bare name only after `config.js` has run, which is why
 the read is inside the handler rather than at the top of the file.
+
+### `shim/bests.js`
+
+BEST SHIFTS, on the device, and it exists because of what two other decisions
+left behind. `package.mjs` disconnects the ScoreClient, so `loadScores()` asks
+the arcade board and is answered `[]` -- an unconnected client does not throw,
+it returns nothing, so the table is *emptied* on every launch rather than left
+alone. And `ios.css` hides the initials field and SUBMIT, because Game Center
+already takes every finished shift without asking and a second leaderboard that
+asks a player to name a score going nowhere is worse than none. Between them the
+card would have read NO SHIFTS LOGGED for ever.
+
+So the app files its own: the last ten shifts in `localStorage`, sorted by
+score, the WHO column relabelled WHEN and carrying a date. It is also the only
+board a player who declined Game Center will ever see, which is the reason it is
+worth having rather than simply hiding the button.
+
+**It writes the store the ScoreClient already falls back to**, rather than
+keeping one of its own. `adenosine-score-client.js` mirrors every board into
+localStorage under `adenosine_scores_<game>` and reads it whenever the socket is
+not connected, which in a bundle is always -- so `loadScores()` picks these rows
+up by itself on the next launch, through a path that was already there.
+
+`localScores` is assigned as well, for the shift that has just finished:
+`loadScores()` ran at startup and will not run again. It is a top-level `let` in
+`js/main.js`, a global lexical binding rather than a property of `window`, so it
+is reachable by bare name from a shim -- the same reading `gamekit.js` does for
+`TRAY_CAP`. `tools/screenshots/shots.js` seeds both places for the same reason,
+and that comment is where the localStorage key came from.
+
+Not written through `scoreClient.save()`, which would be the obvious route: it
+upper-cases the name and slices it to three characters, for an arcade cabinet's
+initials. A date does not survive that, and a date is what the column is for
+here.
 
 ## The title card is measured, not eyeballed
 

@@ -30,7 +30,7 @@
  * | self-host the font | **two families**, not one, so two `@font-face` blocks |
  * | drop `.ogg` | different mechanism: a `MUSIC_SOURCES` array, not an `AUDIO_EXT` ternary |
  * | arcade cross-promo, credits `last updated`, scoreboard rebuild | **absent here**, so not transforms at all |
- * | the four shims | **two here**: one `gamekit.js` covers scores and achievements, and bests stay in the game rather than in a shim |
+ * | the four shims | **three here**: one `gamekit.js` covers scores and achievements, and `bests.js` keeps the local board the disconnected ScoreClient cannot |
  *
  * ## The guard is the point
  *
@@ -159,7 +159,7 @@ const FONTS = [
  * the game, which is what keeps them out of web/ and keeps the site free of a
  * Capacitor dependency.
  */
-const SHIMS = ['gamekit.js', 'haptics.js'];
+const SHIMS = ['gamekit.js', 'haptics.js', 'bests.js'];
 
 // `adenosine-rpg.js` is this game's engine, and probing for it rather than for
 // any shared file is what stops a website checkout that cannot build this game
@@ -369,10 +369,39 @@ body {
 }
 
 /* The board already sets these; everything else in the app wants them too, or a
-   mistimed second tap zooms the page and a long press offers to copy a tile. */
+   mistimed second tap zooms the page and a long press offers to copy a tile.
+
+   touch-action is the half that was missing, and the comment above described
+   the fix rather than the rules: neither -webkit-touch-callout nor the tap
+   highlight has anything to do with zoom, so a double tap anywhere -- two jabs
+   at SHIP during a RUSH is all it takes -- zoomed the page and left the board
+   half off screen with no way back but a pinch. manipulation is exactly the
+   right value: it drops the double-tap-to-zoom gesture and the 300ms click
+   delay that comes with waiting for it, and keeps ordinary panning and pinch
+   zoom, so nothing accessible is taken away.
+
+   Reported from the Simulator on 2026-09-26, where it made the game close to
+   unplayable. */
 * {
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* No initials in the app.
+   Every finished shift is already reported to Game Center by shim/gamekit.js,
+   without being asked for anything, and the arcade board SUBMIT posts to is
+   the one 'unconnect ScoreClient' disconnects a few transforms up -- so the
+   field asked a player to name a score that was going nowhere. shim/bests.js
+   keeps BEST SHIFTS on the device instead, filed by date.
+
+   It was also 80px of the end-of-shift card, which is why that card did not
+   fit a landscape phone: see the measurements in modals.css. Hidden rather
+   than removed because endShift() clears the field by id on every shift and
+   would throw on a missing element, taking the card down with it. */
+#initials-input,
+#btn-submit {
+    display: none;
 }
 
 button,

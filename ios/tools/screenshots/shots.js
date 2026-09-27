@@ -38,14 +38,18 @@
   /* A history for the best-shifts table. The app's ScoreClient is never
      connected, so it falls back to localStorage under this key; `localScores`
      is read from there at load, and is assigned here as well so the table is
-     right whether or not this runs before that load finishes. */
+     right whether or not this runs before that load finishes.
+
+     Dates rather than initials since shim/bests.js: the app files shifts by
+     day and relabels that column WHEN, so three-letter initials here would be
+     a screenshot of a column heading the app no longer has. */
   function seedBests() {
     var rows = [
-      { initials: 'JAM', score: 6120, shipped: 26 },
-      { initials: 'MC1', score: 5240, shipped: 24 },
-      { initials: 'JIM', score: 4880, shipped: 21 },
-      { initials: 'BOO', score: 3960, shipped: 18 },
-      { initials: 'AAA', score: 2510, shipped: 12 }
+      { initials: '24 SEP', score: 6120, shipped: 26 },
+      { initials: '22 SEP', score: 5240, shipped: 24 },
+      { initials: '19 SEP', score: 4880, shipped: 21 },
+      { initials: '17 SEP', score: 3960, shipped: 18 },
+      { initials: '11 SEP', score: 2510, shipped: 12 }
     ];
     try {
       localStorage.setItem('adenosine_scores_makemecookies', JSON.stringify(rows));

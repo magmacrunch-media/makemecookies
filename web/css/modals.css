@@ -220,6 +220,24 @@
   .final-big { font-size: 24px; margin-bottom: 4px; }
   .initials-input { margin: 8px auto; min-height: 44px; }
   .modal .btn { min-height: 44px; padding: 12px 14px; }
+
+  /* BEST SHIFTS is the card the trimming above cannot save: its height is ten
+     rows of data rather than chrome, 459px measured against the 381px an
+     iPhone 17 Pro has in landscape once the home indicator is out. Scrolling
+     the whole card would put CLOSE off the bottom, so scroll the rows instead
+     and let the heading and the button stay put.
+
+     The 196px is this card's own chrome at these sizes -- overlay padding,
+     modal padding, h2, sub, table margins and the controls row. The safe-area
+     variables exist only in the bundle and fall back to 0px in a browser, the
+     same arrangement layout.css uses; without them the rows run under the home
+     indicator on exactly the device this block is for. */
+  .scores-scroll {
+    max-height: calc(100dvh - 196px - var(--safe-top, 0px) - var(--safe-bottom, 0px));
+    overflow-y: auto;
+  }
+  .scores-table td { padding: 5px 8px; font-size: 12px; }
+  .scores-table th { padding: 4px 8px; }
 }
 
 /* The ?debug shift readout. Monospace and selectable, because the point of it
