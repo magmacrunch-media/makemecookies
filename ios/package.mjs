@@ -307,6 +307,35 @@ edit(state, 'no double-tap zoom', (html) =>
   )
 );
 
+// ── what the app is built on, which is not what the page is ──────────────────
+//
+// The site runs adenosine over a canvas and nothing else. The app is that page
+// inside a WKWebView that Capacitor provides, with hypnopompia's Swift in the
+// binary: GameCenterPlugin and GameViewController, vendored byte-identical and
+// listed in that repo's consumers.json. So the app's line credits three layers
+// and the site's credits one, because they are different things, and a shared
+// credits panel that named all three would be wrong in a browser.
+//
+// Capacitor is the one with an obligation attached rather than a courtesy: it
+// is MIT, and somebody else's. hypnopompia and adenosine are ours, and are
+// here because a public repo in a credits panel is a door rather than a boast.
+//
+// The typefaces come out of this line and belong on the acknowledgements page
+// at magmacrunch.com, with the licences in full. Four short entries is what
+// keeps this panel on one landscape screen, and BUILT WITH is the line with
+// the least room left.
+//
+// Before the outbound-links transform below, so these two get target="_blank"
+// from that rule rather than carrying their own copy of it.
+edit(state, 'credits: the layers the app actually runs on', (html) =>
+  html.replace(
+    /<a href="https:\/\/github\.com\/magmacrunch-media\/adenosine">adenosine<\/a>\s*\n?\s*&middot; Press Start 2P &middot; Share Tech Mono/,
+    '<a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>\n'
+      + '          &middot; <a href="https://github.com/magmacrunch-media/hypnopompia">hypnopompia</a>\n'
+      + '          &middot; <a href="https://capacitorjs.com">Capacitor</a>'
+  )
+);
+
 // Before the transform below, deliberately: that one turns every outbound
 // link into one that opens Safari, and this mark is the one link that must not
 // be tappable at all. A player who has not clocked in yet should not be one
