@@ -46,7 +46,7 @@
 </style>
 <link rel="stylesheet" href="css/base.css?v=d0d7eb91">
 <link rel="stylesheet" href="css/layout.css?v=7cfa681d">
-<link rel="stylesheet" href="css/modals.css?v=29788bfe">
+<link rel="stylesheet" href="css/modals.css?v=28dbf3df">
 <link rel="stylesheet" href="css/title.css?v=7fbb830c">
 
 </head>
@@ -272,51 +272,44 @@
 <div class="modal-overlay hidden" id="modal-credits">
   <div class="modal modal-credits">
     <div class="modal-titlebar">
-      <h2>CREDITS</h2>
+      <!-- The mark in the heading rather than on a line of its own, which is
+           george-boole's arrangement and for its stated reason: the panel is
+           meant to be the length of one phone screen, so a row of its own is
+           the ~58px that puts it back to scrolling. -->
+      <h2><img class="credits-mark" src="img/mc-logo.png" alt="" width="26" height="32">CREDITS</h2>
       <div class="modal-sub">makemecookies!x4</div>
     </div>
+
+    <!-- Credits, and only credits.
+         THE SHIFT, HOW TO PLAY and SCORING used to sit here and said again,
+         at greater length, what the HOW TO PLAY card above already says: the
+         stations, RUSH, MESS, the scoring table and "no losing". Five hundred
+         words of rules is what made this panel 708px of content in a 146px
+         window on a landscape phone -- a porthole you had to drag five times
+         to read, on iOS, inside a fixed overlay, which is the hardest kind of
+         scroll to catch with a thumb. The panel fits without scrolling now,
+         which is a better fix than making the scroll work.
+
+         What is left is what a credits panel is for: who made the music, what
+         it was built with, and whose it is. george-boole's is the model. -->
     <div class="modal-body">
       <div class="credits-section">
         <div class="credits-label">MUSIC</div>
         <div class="credits-value">
-          <strong>&ldquo;makemecookies! x4.&rdquo;</strong> by Jimmi, from the album
-          <em>JIMMI</em>. The game is built around the track: one play is one
-          shift, and the four rush windows are named for it.
+          <strong>&ldquo;makemecookies! x4&rdquo;</strong> by Jimmi, from the
+          album <em>JIMMI</em>
         </div>
       </div>
       <div class="credits-section">
         <div class="credits-label">BUILT WITH</div>
+        <!-- Shorter than it reads on the desktop page by two words, and they
+             were measured rather than trimmed for taste: at 640px this entry
+             wraps to two lines instead of three, which is the 18px that takes
+             the whole panel under a landscape phone's cap. -->
         <div class="credits-value">
-          Vanilla HTML, CSS &amp; JavaScript &middot; Canvas API &middot;
+          HTML, CSS &amp; JavaScript &middot; Canvas &middot;
           <a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>
-          game engine &middot; Press Start 2P and Share Tech Mono
-        </div>
-      </div>
-      <div class="credits-section">
-        <div class="credits-label">THE SHIFT</div>
-        <div class="credits-value">
-          The song is the clock. When it ends, so does your shift &mdash; there
-          is no losing, only how much you shipped and how much mess you left.
-          Fill the <strong>MESS</strong> bar and the health inspector stops the
-          line for four seconds while the music keeps playing.
-        </div>
-      </div>
-      <div class="credits-section">
-        <div class="credits-label">HOW TO PLAY</div>
-        <div class="credits-value">
-          Keys <strong>1</strong>&ndash;<strong>5</strong> act on the station
-          above them; clicking a station works too. Each machine keeps its own
-          clock and none of them wait for you. The meter under each bay is how
-          close it is to spoiling.
-        </div>
-      </div>
-      <div class="credits-section">
-        <div class="credits-label">SCORING</div>
-        <div class="credits-value">
-          Golden cookie <strong>100</strong> &middot; overmixed
-          <strong>45</strong> &middot; raw or burnt <strong>0</strong>. A box of
-          four pays <strong>&times;2</strong>; shipping inside a RUSH doubles it
-          again. Finish under 20 mess for <strong>SPOTLESS +500</strong>.
+          &middot; Press Start 2P &amp; Share Tech Mono
         </div>
       </div>
       <div class="credits-section">

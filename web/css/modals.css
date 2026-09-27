@@ -140,6 +140,15 @@
 }
 .modal-titlebar h2 { margin-bottom: 2px; }
 .modal-titlebar .modal-sub { margin-bottom: 0; }
+
+/* The same mark the title card signs off with, at the same size, quieter.
+   Baseline-shifted rather than flexed: the heading is one line of Press Start
+   2P and a flex row would rebuild it to move a 26px image 6px. */
+.credits-mark {
+  vertical-align: -8px;
+  margin-right: 10px;
+  opacity: 0.55;
+}
 .modal-body {
   padding: 20px 24px;
   overflow-y: auto;
@@ -151,12 +160,12 @@
 .modal-body::-webkit-scrollbar { width: 4px; }
 .modal-body::-webkit-scrollbar-track { background: transparent; }
 .modal-body::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
-.credits-section {
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-.credits-section:last-of-type { border-bottom: none; margin-bottom: 8px; }
+/* No rules between the entries, and less air than the old panel had. Three
+   short entries do not need separating from each other -- the pink label is
+   the separator -- and the dividers were 5 borders' worth of chrome on a card
+   that has one screen to fit in. */
+.credits-section { margin-bottom: 14px; }
+.credits-section:last-of-type { margin-bottom: 0; }
 .credits-label {
   font-family: 'Press Start 2P', monospace;
   font-size: 8px;
@@ -238,6 +247,34 @@
   }
   .scores-table td { padding: 5px 8px; font-size: 12px; }
   .scores-table th { padding: 4px 8px; }
+
+  /* ── The credits card, which has to fit rather than scroll ──────────
+     Two faults met here. The .modal padding at the top of this block is wrong
+     for this card and has been since that block was written: it is a flex
+     column whose titlebar, body and footer each carry their own, so the rule
+     wrapped the whole panel in a second ring of chrome on the one viewport
+     with none to spare. Same specificity as .modal-credits, so it wins on
+     order alone, which is why this sits at the bottom rather than up there.
+
+     And 82vh is a cap in the wrong units for an app: it measures a viewport
+     the home indicator is standing in. The safe-area variables exist only in
+     the bundle and fall back to 0px in a browser, as in layout.css.
+
+     640px wide because landscape has width going spare and every line that
+     does not wrap is a line of height back. Measured at 874x402, the iPhone
+     17 Pro's landscape size: the panel comes to 338px against a 357px cap,
+     with no scrolling at all. The body can still scroll, so a longer line in
+     some future font lands on a short scroll rather than a clipped CLOSE. */
+  .modal.modal-credits {
+    padding: 0;
+    max-width: 640px;
+    max-height: calc(100dvh - 24px - var(--safe-top, 0px) - var(--safe-bottom, 0px));
+  }
+  .modal-credits .modal-titlebar { padding: 9px 18px 8px; }
+  .modal-credits .modal-body { padding: 12px 18px 10px; }
+  .modal-credits .modal-footer { padding: 8px 18px; }
+  .modal-credits .credits-section { margin-bottom: 9px; }
+  .modal-credits .credits-value { line-height: 1.5; }
 }
 
 /* The ?debug shift readout. Monospace and selectable, because the point of it
