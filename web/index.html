@@ -46,7 +46,7 @@
 </style>
 <link rel="stylesheet" href="css/base.css?v=d0d7eb91">
 <link rel="stylesheet" href="css/layout.css?v=7cfa681d">
-<link rel="stylesheet" href="css/modals.css?v=28dbf3df">
+<link rel="stylesheet" href="css/modals.css?v=3ff6d513">
 <link rel="stylesheet" href="css/title.css?v=7fbb830c">
 
 </head>
@@ -283,33 +283,52 @@
     <!-- Credits, and only credits.
          THE SHIFT, HOW TO PLAY and SCORING used to sit here and said again,
          at greater length, what the HOW TO PLAY card above already says: the
-         stations, RUSH, MESS, the scoring table and "no losing". Five hundred
-         words of rules is what made this panel 708px of content in a 146px
-         window on a landscape phone -- a porthole you had to drag five times
-         to read, on iOS, inside a fixed overlay, which is the hardest kind of
-         scroll to catch with a thumb. The panel fits without scrolling now,
-         which is a better fix than making the scroll work.
+         stations, RUSH, MESS, the scoring table and "no losing". That is what
+         made this panel 708px of content in a 146px window on a landscape
+         phone -- a porthole you had to drag five times to read, inside a fixed
+         overlay, which is the hardest kind of scroll to catch with a thumb.
 
-         What is left is what a credits panel is for: who made the music, what
-         it was built with, and whose it is. george-boole's is the model. -->
+         The five entries below are longer than the three they replaced, and
+         that is deliberate: the window is the full height of the card now
+         rather than a sixth of it, so the same content is a flick or two
+         instead of five drags. Measured on the Simulator, 281px of scroll.
+
+         Every one of them is a credit rather than a rule, and every fact in
+         them comes out of NOTICE -- the label Jimmi records for, the sprites
+         that are code rather than image files, and what the licence does and
+         does not cover. That last one earns its place: the source is public,
+         and the song is the one thing in the repository that is not. -->
     <div class="modal-body">
       <div class="credits-section">
         <div class="credits-label">MUSIC</div>
         <div class="credits-value">
           <strong>&ldquo;makemecookies! x4&rdquo;</strong> by Jimmi, from the
-          album <em>JIMMI</em>
+          album <em>JIMMI</em>. A magmacrunch media act &mdash; the game is
+          named after the song, not the other way round.
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">SPRITES</div>
+        <div class="credits-value">
+          No image files. The factory, the machines, the dough, the cookies and
+          the flames are string rows in <strong>pixels.js</strong>, drawn onto
+          a canvas.
         </div>
       </div>
       <div class="credits-section">
         <div class="credits-label">BUILT WITH</div>
-        <!-- Shorter than it reads on the desktop page by two words, and they
-             were measured rather than trimmed for taste: at 640px this entry
-             wraps to two lines instead of three, which is the 18px that takes
-             the whole panel under a landscape phone's cap. -->
         <div class="credits-value">
           HTML, CSS &amp; JavaScript &middot; Canvas &middot;
           <a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>
-          &middot; Press Start 2P &amp; Share Tech Mono
+          &middot; Press Start 2P by CodeMan38 &middot; Share Tech Mono
+        </div>
+      </div>
+      <div class="credits-section">
+        <div class="credits-label">SOURCE</div>
+        <div class="credits-value">
+          Public, under
+          <a href="https://polyformproject.org/licenses/noncommercial/1.0.0">PolyForm
+          Noncommercial 1.0.0</a>. The song is not: that recording is reserved.
         </div>
       </div>
       <div class="credits-section">

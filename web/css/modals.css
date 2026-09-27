@@ -152,6 +152,11 @@
 .modal-body {
   padding: 20px 24px;
   overflow-y: auto;
+  /* Keep the scroll in here rather than letting it chain to the overlay and
+     then to the page: in the app the body has overscroll-behavior: none, so a
+     flick that escapes this box stops dead and reads as the panel refusing to
+     move. This is the box that scrolls, and it is the only one. */
+  overscroll-behavior: contain;
   flex-grow: 1;
   scrollbar-width: thin;
   scrollbar-color: var(--border-bright) transparent;
@@ -181,7 +186,11 @@
   line-height: 1.8;
 }
 .credits-value a { color: var(--sprinkle); }
-.credits-value strong { color: var(--butter); text-shadow: var(--glow-butter); }
+/* Butter, and no glow. The glow is the HUD's voice -- a score, a bonus, a
+   number lighting up -- and on a song title in a paragraph of body text it
+   read as a highlighter pen rather than as neon. Colour alone is enough to
+   mark the two things in here worth marking. */
+.credits-value strong { color: var(--butter); }
 .modal-footer {
   padding: 14px 24px;
   border-top: 1px solid var(--border);
@@ -261,10 +270,19 @@
      the bundle and fall back to 0px in a browser, as in layout.css.
 
      640px wide because landscape has width going spare and every line that
-     does not wrap is a line of height back. Measured at 874x402, the iPhone
-     17 Pro's landscape size: the panel comes to 338px against a 357px cap,
-     with no scrolling at all. The body can still scroll, so a longer line in
-     some future font lands on a short scroll rather than a clipped CLOSE. */
+     does not wrap is a line of height back.
+
+     Between them these make the scrolling WINDOW as tall as the card can be
+     rather than a sixth of it, which is the whole difference between a panel
+     that scrolls and one that cannot be read. On the iPhone 17 Pro simulator
+     in landscape the card is 357px, the window inside it about 220px, and the
+     five entries scroll through it by 281px -- a flick or two, with the
+     heading and CLOSE staying put.
+
+     Take that 281 from the device and not from a desktop browser at 874x402,
+     which says 83px for the same stylesheet. Same CSS pixels, different text
+     wrapping, and the difference is three times over. Anything here that has
+     to be right is worth measuring in the Simulator. */
   .modal.modal-credits {
     padding: 0;
     max-width: 640px;
