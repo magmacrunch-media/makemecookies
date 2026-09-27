@@ -276,6 +276,37 @@ transforms.stripStamps(build, state);
 
 transforms.viewportNotch(build, state);
 
+// ── the double tap ───────────────────────────────────────────────────────────
+//
+// It zoomed the page, and CSS could not stop it. `touch-action: manipulation`
+// is the web's answer and is in base.css, where it also serves the site -- but
+// in WKWebView the double-tap-to-zoom gesture is the web view's own recogniser
+// and does not consult it. Reported from the Simulator after the CSS shipped
+// and was verified to be in the installed bundle, which is what sent this
+// looking one layer down.
+//
+// Capacitor looks like it has this covered and does not. `zoomEnabled` defaults
+// to false, which sounds decisive, and all it does is
+// `scrollViewWillBeginZooming` -> `pinchGestureRecognizer.isEnabled = false`
+// (WebViewDelegationHandler.swift). That is the PINCH, and it is switched off
+// only once a zoom has begun. Nothing there touches the double tap.
+//
+// The viewport meta does reach it, and it works here because Capacitor never
+// sets `ignoresViewportScaleLimits` -- so WKWebView still honours scale limits,
+// unlike Mobile Safari, which has ignored `user-scalable=no` since iOS 10.
+//
+// It takes nothing away that the app had: pinch is already gone, by
+// Capacitor's own default. Deliberately not in hypnopompia's shared
+// viewportNotch, which four apps use -- this is a game played by mashing five
+// buttons, and a page that is read rather than tapped can want the opposite.
+edit(state, 'no double-tap zoom', (html) =>
+  html.replace(
+    /(<meta name="viewport" content="[^"]*?)(">)/,
+    (_, head, tail) =>
+      (head.includes('user-scalable') ? _ : `${head}, maximum-scale=1.0, user-scalable=no${tail}`)
+  )
+);
+
 // Before the transform below, deliberately: that one turns every outbound
 // link into one that opens Safari, and this mark is the one link that must not
 // be tappable at all. A player who has not clocked in yet should not be one
@@ -369,23 +400,19 @@ body {
 }
 
 /* The board already sets these; everything else in the app wants them too, or a
-   mistimed second tap zooms the page and a long press offers to copy a tile.
+   long press offers to copy a tile.
 
-   touch-action is the half that was missing, and the comment above described
-   the fix rather than the rules: neither -webkit-touch-callout nor the tap
-   highlight has anything to do with zoom, so a double tap anywhere -- two jabs
-   at SHIP during a RUSH is all it takes -- zoomed the page and left the board
-   half off screen with no way back but a pinch. manipulation is exactly the
-   right value: it drops the double-tap-to-zoom gesture and the 300ms click
-   delay that comes with waiting for it, and keeps ordinary panning and pinch
-   zoom, so nothing accessible is taken away.
-
-   Reported from the Simulator on 2026-09-26, where it made the game close to
-   unplayable. */
+   The zoom half of the old comment here was wrong twice over, which is worth
+   leaving recorded. It claimed these two rules stop "a mistimed second tap"
+   zooming: they do not, and neither -webkit-touch-callout nor the tap highlight
+   has anything to do with zoom. touch-action: manipulation was added next and
+   did not stop it either, because in WKWebView the double tap is the web view's
+   own gesture recogniser and never consults CSS. That rule now lives in
+   base.css, where it is right for the site, and the app's answer is the
+   viewport meta -- see the transform named "no double-tap zoom" above. */
 * {
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
 }
 
 /* No initials in the app.

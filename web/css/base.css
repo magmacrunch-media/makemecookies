@@ -28,7 +28,13 @@
   --glow-sprinkle: 0 0 6px #41E8D1, 0 0 14px rgba(65,232,209,0.25);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* touch-action: this game is played by tapping five buttons fast, and a
+   double tap is what a browser reads as "zoom in". `manipulation` drops that
+   gesture and the click delay that comes from waiting to see whether a second
+   tap is coming; panning and pinch zoom are untouched, so nothing accessible
+   is lost. It was in the app's stylesheet first and belongs here: the site is
+   played on phones too, and the app is this page. */
+* { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
 
 body {
   background: var(--bg);
