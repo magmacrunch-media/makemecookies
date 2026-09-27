@@ -292,58 +292,45 @@
          phone -- a porthole you had to drag five times to read, inside a fixed
          overlay, which is the hardest kind of scroll to catch with a thumb.
 
-         The five entries below are longer than the three they replaced, and
-         that is deliberate: the window is the full height of the card now
-         rather than a sixth of it, so the same content is a flick or two
-         instead of five drags. Measured on the Simulator, 281px of scroll.
+         Four short entries, and each one credits somebody: the track and who
+         made it, what it was built on, the licence, and whose game it is.
 
-         Every one of them is a credit rather than a rule, and every fact in
-         them comes out of NOTICE -- the label Jimmi records for, the sprites
-         that are code rather than image files, and what the licence does and
-         does not cover. That last one earns its place: the source is public,
-         and the song is the one thing in the repository that is not. -->
+         Short is the whole design. The scrollable band on a landscape phone is
+         a strip between a fixed heading and a fixed CLOSE row, so a thumb that
+         starts on either finds nothing moving. It does scroll when the drag
+         lands in the strip, checked with a real drag on the Simulator, but a
+         panel that fits needs none of that. Keep new entries to a line or two,
+         or this is back to scrolling. -->
     <div class="modal-body">
+      <!-- A person rather than the label, which is george-boole's line and the
+           same words, and first for the same reason it is first there: a
+           credits panel opens with whose it is. The label still signs the
+           game, on the title card and in the mark beside the heading. -->
+      <div class="credits-section">
+        <div class="credits-label">GAME BY</div>
+        <div class="credits-value">Jake A. McCoy for
+          <a href="https://magmacrunch.com">magmacrunch media</a></div>
+      </div>
       <div class="credits-section">
         <div class="credits-label">MUSIC</div>
         <div class="credits-value">
           <strong>&ldquo;makemecookies! x4&rdquo;</strong> by Jimmi, from the
-          album <em>JIMMI</em>. A magmacrunch media act &mdash; the game is
-          named after the song, not the other way round.
-        </div>
-      </div>
-      <div class="credits-section">
-        <div class="credits-label">SPRITES</div>
-        <div class="credits-value">
-          No image files. The factory, the machines, the dough, the cookies and
-          the flames are string rows in <strong>pixels.js</strong>, drawn onto
-          a canvas.
+          album <em>JIMMI</em>.
         </div>
       </div>
       <div class="credits-section">
         <div class="credits-label">BUILT WITH</div>
         <div class="credits-value">
-          HTML, CSS &amp; JavaScript &middot; Canvas &middot;
           <a href="https://github.com/magmacrunch-media/adenosine">adenosine</a>
-          &middot; Press Start 2P by CodeMan38 &middot; Share Tech Mono
+          &middot; Press Start 2P &middot; Share Tech Mono
         </div>
       </div>
       <div class="credits-section">
         <div class="credits-label">SOURCE</div>
         <div class="credits-value">
-          Public, under
           <a href="https://polyformproject.org/licenses/noncommercial/1.0.0">PolyForm
-          Noncommercial 1.0.0</a>. The song is not: that recording is reserved.
+          Noncommercial 1.0.0</a>. The song is reserved.
         </div>
-      </div>
-      <!-- A person rather than the label, which is george-boole's line and the
-           same words: "Jake A. McCoy for magmacrunch media". The label still
-           signs the game -- it is on the title card and in the heading mark
-           above -- so this is the credit that was missing rather than a
-           replacement for it. -->
-      <div class="credits-section">
-        <div class="credits-label">GAME BY</div>
-        <div class="credits-value">Jake A. McCoy for
-          <a href="https://magmacrunch.com">magmacrunch media</a></div>
       </div>
     </div>
     <div class="modal-footer">

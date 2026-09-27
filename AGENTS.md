@@ -68,7 +68,7 @@ the first is the one that generalises:
   already hear and saying the same thing. The bar and the music agree by
   construction; a readout invites reading instead of listening.
 - Its value was never designed. `st.shiftMs` is whatever `music.duration`
-  reports, so the digits were an artifact of the encode — which is exactly why
+  reports, so the digits were an artifact of the encode, which is exactly why
   `0:51` read as an arbitrary number, and why re-encoding the track would have
   silently changed a number the page presented as a rule.
 - Not knowing exactly how long is left is worth something. The end of a shift
@@ -79,7 +79,7 @@ the first is the one that generalises:
 It empties rather than filling, matching the mixer's ready window and the
 oven's golden window in `js/render.js`: on this page, time you have left is
 always a meter going down. `wii/source/render.c` fills instead. The two need
-not agree — the web build is the one with five station meters beside it — but
+not agree (the web build is the one with five station meters beside it), but
 do not "fix" one to match the other without reading this.
 
 **`#hud-time` still exists, hidden, and `noteAudioProblem()` reveals it.** With
