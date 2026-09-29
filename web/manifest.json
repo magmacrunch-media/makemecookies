@@ -1,0 +1,17 @@
+{
+  "name": "MAKEMECOOKIES!X4",
+  "short_name": "cookies",
+  "description": "One song, one shift. Tend five stations of a cookie factory line.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a0a14",
+  "theme_color": "#FF2E9C",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "img/mc-logo.png",
+      "type": "image/png",
+      "sizes": "96x96"
+    }
+  ]
+}
