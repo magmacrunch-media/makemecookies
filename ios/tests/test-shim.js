@@ -350,57 +350,20 @@ function makeStorage(seed) {
   return store;
 }
 
-/**
- * Mirrors GameCenterPlugin.swift, including the part that matters: every method
- * but signIn rejects when the local player is not authenticated, and each
- * rejects on the arguments it requires.
+/*
+ * The fake GameCenter plugin is NOT here. It is vendored from
+ * engines/hypnopompia as ./fake-gamecenter.js, because it is a model of
+ * GameCenterPlugin.swift's guards and that file is vendored from there too: a
+ * guard added upstream wants a line added to the model, and the two drifting
+ * apart quietly stops both games' shim tests meaning anything.
+ *
+ * They had drifted, within a day of the second copy existing. This game's copy
+ * did not model the three `guard let` argument rejections and makemecookies'
+ * did, so this suite would have passed a shim that submitted a score of
+ * `undefined`. `node tools/sync.mjs --check` in the shell now compares it
+ * against both games, and the ios-shared job runs that from this end.
  */
-function makeGameCenter(opts) {
-  const calls = { signIn: 0, submitScore: [], showLeaderboard: [], reportAchievement: [] };
-  const gc = {
-    calls,
-    authenticated: !!(opts && opts.authenticated),
-    failSignIn: false,
-    // A proxy that throws instead of returning a rejected promise. Capacitor's
-    // does not, today; every call in gamekit.js is written as though it might do
-    // either, and these switches are what make that a tested property rather
-    // than a comment. george-boole had the fault these found.
-    throwOnSignIn: false,
-    throwOnShow: false,
-    throwOnReport: false,
-    signIn() {
-      calls.signIn++;
-      if (gc.throwOnSignIn) throw new Error('the bridge threw');
-      if (gc.failSignIn) return Promise.reject(new Error('sign-in failed'));
-      return Promise.resolve({ authenticated: gc.authenticated });
-    },
-    submitScore(o) {
-      calls.submitScore.push(o);
-      if (!o || typeof o.leaderboardId !== 'string') {
-        return Promise.reject(new Error('leaderboardId is required'));
-      }
-      if (typeof o.score !== 'number') return Promise.reject(new Error('score is required'));
-      if (!gc.authenticated) return Promise.reject(new Error('not signed in to Game Center'));
-      return Promise.resolve();
-    },
-    showLeaderboard(o) {
-      calls.showLeaderboard.push(o);
-      if (gc.throwOnShow) throw new Error('the bridge threw');
-      if (!gc.authenticated) return Promise.reject(new Error('not signed in to Game Center'));
-      return Promise.resolve();
-    },
-    reportAchievement(o) {
-      calls.reportAchievement.push(o);
-      if (gc.throwOnReport) throw new Error('the bridge threw');
-      if (!o || typeof o.achievementId !== 'string') {
-        return Promise.reject(new Error('achievementId is required'));
-      }
-      if (!gc.authenticated) return Promise.reject(new Error('not signed in to Game Center'));
-      return Promise.resolve();
-    },
-  };
-  return gc;
-}
+const { makeGameCenter } = require('./fake-gamecenter.cjs');
 
 /**
  * The Taptic Engine, which is the one plugin here whose refusal is ordinary

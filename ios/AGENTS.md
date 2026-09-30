@@ -439,6 +439,27 @@ plugin can now throw rather than reject on `signIn`, `showLeaderboard` and
 Engine has a `failCall` and a `throwOnCall`. Being correct and being pinned are
 different states, and the two games have already drifted apart twice on exactly
 this contract. 149 checks now, 131 before.
+**The fake plugin is not this game's any more.** `ios/tests/fake-gamecenter.cjs`
+is vendored from `engines/hypnopompia`, beside the Swift it models, and
+`node tools/sync.mjs --check` there compares it against both games the way it
+already compared the two Swift files. The `ios-shared` job runs that from this
+end, so editing the copy here reddens this repo rather than only the shell's.
+
+It is vendored because it had already drifted, one day after the second copy
+existed, and in the direction that matters: one game modelled the plugin's three
+`guard let` argument rejections and the other did not, so one suite would have
+passed a shim submitting a score of `undefined`. Byte-identical copies stop that
+half; the shell's own `fake-gamecenter.test.mjs` stops the other half, by
+counting the Swift's rejection sites so a guard added upstream cannot land
+unmodelled.
+
+The harness around it stays here. The little DOM, `settle()`, the storage fake
+and the page are this game's facts, and a shared file carrying one game's facts
+is the design going wrong -- which is the same rule that keeps `shim/` itself
+here. **Adding or removing a vendored file pushes games first, then the shell**,
+which is the reverse of the usual order: the check is a two-way comparison and
+the shell's own CI checks a game out at `main`.
+
 
 ## The three shims, and the only npm plugin in the app
 
