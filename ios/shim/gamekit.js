@@ -273,29 +273,62 @@
 
   // ---- a way into the board ------------------------------------------------
 
+  // The button exists exactly while the player is signed in, and syncing it is
+  // one function rather than an add and a remove so that invariant cannot drift.
+  //
   // Injected rather than written into web/index.html: the site has no Game
-  // Center, and a button that opens nothing is worse than no button. Added
-  // only once sign-in has actually succeeded, so a player who declined never
-  // sees it -- and added on a later sign-in too, which is what refresh() is
-  // for.
-  function addLeaderboardButton() {
+  // Center, and a button that opens nothing is worse than no button. So it
+  // appears only once sign-in has actually succeeded -- on a later sign-in as
+  // well as the one at load, which is what refresh() is for -- and it comes
+  // back out on a sign-out, which is the same argument pointed the other way.
+  // A player who signs out mid-shift was being left with a live GAME CENTER
+  // button whose every tap was refused by GameCenterPlugin.swift's
+  // isAuthenticated guard.
+  function syncLeaderboardButton() {
     var row = document.querySelector('#modal-scores .controls');
-    if (!row || document.getElementById('btn-game-center')) return;
+    if (!row) return;
+
+    var existing = document.getElementById('btn-game-center');
+    if (!authenticated) {
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+      return;
+    }
+    if (existing) return;
 
     var btn = document.createElement('button');
     btn.className = 'btn gold';
     btn.id = 'btn-game-center';
     btn.textContent = 'GAME CENTER';
     btn.addEventListener('click', function () {
-      var p = plugin();
-      if (!p || typeof p.showLeaderboard !== 'function') return;
-      Promise.resolve()
-        .then(function () {
-          return p.showLeaderboard({ leaderboardId: LEADERBOARD });
-        })
-        .catch(function () {});
+      showBoard();
     });
     row.insertBefore(btn, row.firstChild);
+  }
+
+  /**
+   * Open Game Center's own full-screen board, and resolve false rather than
+   * reject if it will not open.
+   *
+   * Every rejection in this file is caught, and this one was not until
+   * 2026-09-29: it handed the caller a promise nobody was holding, so a tap
+   * while signed out -- or any call at all from the public API below, where the
+   * return value was dropped on the floor -- raised an unhandled rejection in
+   * the webview. Not a crash, and not visible on a phone, which is exactly the
+   * kind of thing ios/tests/test-shim.js now fails on.
+   */
+  function showBoard() {
+    var p = plugin();
+    if (!p || typeof p.showLeaderboard !== 'function') return Promise.resolve(false);
+    return Promise.resolve()
+      .then(function () {
+        return p.showLeaderboard({ leaderboardId: LEADERBOARD });
+      })
+      .then(function () {
+        return true;
+      })
+      .catch(function () {
+        return false;
+      });
   }
 
   // ---- sign in -------------------------------------------------------------
@@ -304,10 +337,11 @@
    * Ask the native side where the player stands, and remember the answer.
    *
    * At load and on every return to the app, for the reason in the header. A
-   * gained sign-in is the moment to offer the board and to settle what is
-   * owed; a lost one is worth noticing too, so anything reading
-   * `authenticated` is reading the current state rather than the state at
-   * launch.
+   * gained sign-in is the moment to settle what is owed; a lost one is worth
+   * noticing too, so anything reading `authenticated` is reading the current
+   * state rather than the state at launch, and the button follows it either
+   * way. A rejected signIn() counts as signed out: it is what the plugin says
+   * when it cannot tell, and offering a board on a maybe is the worse guess.
    */
   function refresh() {
     var p = plugin();
@@ -318,14 +352,13 @@
         var now = !!(result && result.authenticated);
         var gained = now && !authenticated;
         authenticated = now;
-        if (gained) {
-          addLeaderboardButton();
-          flush();
-        }
+        syncLeaderboardButton();
+        if (gained) flush();
         return now;
       })
       .catch(function () {
         authenticated = false;
+        syncLeaderboardButton();
         return false;
       });
   }
@@ -365,12 +398,9 @@
     // Re-checks and returns the current state. Here so a sign-in button, if
     // the card ever grows one, has something to call that cannot hang.
     signIn: refresh,
-    show: function () {
-      var p = plugin();
-      if (p && typeof p.showLeaderboard === 'function') {
-        p.showLeaderboard({ leaderboardId: LEADERBOARD });
-      }
-    },
+    // Resolves true if the board opened, false if it could not. Never
+    // rejects: see showBoard().
+    show: showBoard,
     // Exists so a device can be put back to a known state while testing
     // against the Game Center sandbox, which has its own reset.
     reset: function () {

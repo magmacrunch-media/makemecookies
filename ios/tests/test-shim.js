@@ -61,6 +61,16 @@ const SHIM_DIR = path.join(__dirname, '..', 'shim');
 let passed = 0;
 let failed = 0;
 
+// Every rejection in the shims is meant to be caught, and one that is not is a
+// bug even though nothing crashes: `show()` handed back a rejected promise
+// nobody was holding until 2026-09-29, which on a phone is invisible. So the
+// suite watches for them and counts each one as a failure at the end of the
+// run, on top of whatever named test was standing next to it.
+const unhandled = [];
+process.on('unhandledRejection', (reason) => {
+  unhandled.push(reason && reason.message ? reason.message : String(reason));
+});
+
 function assert(condition, message) {
   if (condition) {
     passed++;
@@ -550,6 +560,42 @@ async function leaderboardTests() {
     assert(env.button() === null,
       'a player who declined is not offered a button that opens nothing');
   }
+  section('gamekit: opening the board');
+  {
+    const env = makeEnv({ authenticated: true }).load('gamekit.js');
+    await settle();
+    const opened = await env.cookies().gameCenter.show();
+    assert(opened === true, 'show() resolves true when the board opened');
+    assertEqual(env.gc.calls.showLeaderboard, [{ leaderboardId: BOARD }],
+      'and passes the one id this game has');
+  }
+  {
+    // Signed out. GameCenterPlugin.swift refuses it, and a refusal nobody is
+    // holding is an unhandled rejection in the webview.
+    const env = makeEnv({ authenticated: false }).load('gamekit.js');
+    await settle();
+    const opened = await env.cookies().gameCenter.show();
+    assert(opened === false, 'show() resolves false when Game Center refused it');
+    assert(env.gc.calls.showLeaderboard.length === 1, 'having asked');
+  }
+  {
+    const env = makeEnv({ plugin: false }).load('gamekit.js');
+    await settle();
+    const opened = await env.cookies().gameCenter.show();
+    assert(opened === false, 'and false in a browser, rather than throwing');
+  }
+  {
+    // The call as any caller would actually write it: return value dropped.
+    // That is the shape that leaked, and the reason show() may not reject.
+    const env = makeEnv({ authenticated: false }).load('gamekit.js');
+    await settle();
+    const before = unhandled.length;
+    env.cookies().gameCenter.show();
+    await settle();
+    assertEqual(unhandled.length, before,
+      'and a show() whose promise is dropped leaks no unhandled rejection');
+  }
+
   {
     // The card is not in the page at all: a static server pointed at www/ with
     // the modal renamed, or the markup moving. It must not throw.
@@ -596,10 +642,23 @@ async function signInTests() {
   {
     const env = makeEnv({ authenticated: true }).load('gamekit.js');
     await settle();
+    assert(env.button() !== null, 'the button is there while signed in');
+
     env.gc.authenticated = false;
     env.resume();
     await settle();
     assert(env.cookies().gameCenter.authenticated === false, 'a sign-out is noticed too');
+    assert(env.button() === null,
+      'and takes the button with it, rather than leaving one every tap is refused');
+    const controls = env.doc.querySelector('#modal-scores .controls');
+    assertEqual(controls.children.map((c) => c.id), ['btn-close-scores'],
+      'and CLOSE survives the removal as well as the injection');
+
+    env.gc.authenticated = true;
+    env.resume();
+    await settle();
+    assert(env.button() !== null, 'signing back in brings it back');
+    assertEqual(controls.children.length, 2, 'once');
   }
 
   section('gamekit: the plugin misbehaving');
@@ -619,6 +678,20 @@ async function signInTests() {
     await settle();
     assert(env.cookies().gameCenter.authenticated === true,
       'and the next return to the app recovers from it');
+    assert(env.button() !== null, 'and offers the board at last');
+  }
+  {
+    // Signed in, then a signIn() that rejects. The plugin cannot say, so the
+    // shim reads it as signed out, and a button it would refuse must not stay.
+    const env = makeEnv({ authenticated: true }).load('gamekit.js');
+    await settle();
+    assert(env.button() !== null, 'the button is there');
+    env.gc.failSignIn = true;
+    env.resume();
+    await settle();
+    assert(env.cookies().gameCenter.authenticated === false,
+      'a rejected re-check reads as signed out');
+    assert(env.button() === null, 'and the button does not outlive it');
   }
 }
 
@@ -1046,6 +1119,13 @@ async function togetherTests() {
   } catch (e) {
     failed++;
     console.error('\n  FAIL: the suite threw -- ' + (e && e.stack ? e.stack : e));
+  }
+  // One more turn of the loop, so a rejection raised by the last test has
+  // somewhere to land before the count is read.
+  await settle();
+  for (const reason of unhandled) {
+    failed++;
+    console.error('\n  FAIL: a promise rejection escaped a shim uncaught -- ' + reason);
   }
   console.log('\n=== Results: ' + passed + ' passed, ' + failed + ' failed ===');
   process.exit(failed > 0 ? 1 : 0);

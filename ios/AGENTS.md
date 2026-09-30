@@ -400,7 +400,7 @@ manifest shipped, and was green throughout. Both bugs are in the JavaScript
 half of a contract whose two ends are written in different languages, and the
 Swift end was correct in both.
 
-The suite is 116 checks across all three shims rather than two regression
+The suite is 131 checks across all three shims rather than two regression
 tests: the eight achievement ids against the moments that earn them, the
 leaderboard taking every finished shift, the local board's sort and its
 ten-row cap, the haptic mapping in the table below, and every shim against no
@@ -413,6 +413,15 @@ And `TRAY_CAP` and `localScores` are declared in the test realm as the global
 lexical bindings the game declares them as, rather than as properties of
 `window`, which is the only way the late bare-name reads those two comments
 describe are exercised at all.
+
+It also **fails on an unhandled promise rejection wherever one happens**, and
+that is not belt and braces: it is how the last of these was found. Every
+rejection in a shim is supposed to be caught, because the contract is to
+degrade quietly, so one that escapes is a bug by definition -- and it is a
+bug with nothing to see, since a webview logs it where nobody is looking and
+carries on. `gameCenter.show()` was handing its caller a promise that
+rejected whenever the player was signed out, and every caller drops the
+return value, so it leaked one per tap.
 
 ## The three shims, and the only npm plugin in the app
 
@@ -480,6 +489,15 @@ nothing. That is also the reason it is injected rather than written into
 `web/index.html`, which has no Game Center at all. It is injected on a *later*
 sign-in too, which it was not until 2026-09-29; the section on the tests above
 is what that cost.
+
+**It comes back out on a sign-out**, which is the same argument pointed the
+other way and was missing until 2026-09-29 as well: signing out mid-shift
+left a live GAME CENTER button whose every tap `GameCenterPlugin.swift`
+refused. One function syncs it now rather than an add and a remove, so "the
+button exists exactly while the player is signed in" is a line of code rather
+than an invariant two call sites have to keep. A `signIn()` that rejects
+counts as signed out for this: it is what the plugin says when it cannot tell,
+and offering a board on a maybe is the worse guess.
 
 An achievement is not banked until Game Center has accepted the report. What is
 earned and still owed lives in `mmc_achievements_pending`, retried on the next
