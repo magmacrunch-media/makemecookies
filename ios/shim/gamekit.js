@@ -61,11 +61,52 @@
  *                ---
  *                610   of App Store Connect's 1000, leaving room for a ninth
  *
- * ## Reporting once
+ * ## Reporting once, and not losing the ones that fail
  *
  * GameKit tolerates re-reporting at 100%, but it can re-show the banner, and a
- * banner for something earned three weeks ago reads as a bug. The ids already
- * sent are kept per device.
+ * banner for something earned three weeks ago reads as a bug. So the ids Game
+ * Center has accepted are kept per device.
+ *
+ * Two sets rather than one, and the second is the fix for a real loss. This
+ * file used to record an id as reported BEFORE the round trip, on the grounds
+ * that a slow submission must not produce two banners. That is right about the
+ * banner and wrong about everything else: GameCenterPlugin.swift rejects
+ * reportAchievement outright when the player is not signed in, the rejection
+ * was caught and dropped here, and the id was already banked. A player who
+ * declined the sign-in sheet -- which is a button Apple puts in front of
+ * everybody -- lost every achievement they went on to earn, for good,
+ * including after signing in later. So:
+ *
+ *   mmc_achievements          accepted by Game Center. Never reported again.
+ *   mmc_achievements_pending  earned, not yet accepted. Retried.
+ *
+ * and the no-two-banners promise is kept by an in-memory in-flight list
+ * instead, which is what it needed in the first place. Found in george-boole
+ * first, whose two gamekit files are this one split apart; both games carry
+ * the same fix, and ios/tests/test-shim.js is the suite that caught it.
+ *
+ * ## The sign-in is asked about more than once
+ *
+ * `authenticated` used to be latched from one fire-and-forget signIn() at load
+ * and never revisited, and what it gates here is the GAME CENTER button. So a
+ * player who declined Apple's sheet at launch, signed in through Settings or
+ * the Game Center app and came back was never offered the board for the rest
+ * of the session, and this file went on telling anything that asked it was
+ * signed out.
+ *
+ * refresh() is called at load and again on every visibilitychange that brings
+ * the app back, which is the only notice a webview gets that the player has
+ * been somewhere else -- and leaving to sign in and returning is exactly the
+ * case that matters. GameCenterPlugin.swift was already built for the second
+ * call: its `reported` flag exists so a later signIn() answers from
+ * GKLocalPlayer.local.isAuthenticated rather than queueing behind a handler
+ * that has already fired and may never fire again. Nothing here ever made one.
+ * Repeating it is a bridge round trip and no network traffic.
+ *
+ * Gaining a sign-in also flushes what is owed. Scores are not resubmitted, and
+ * need no queue: bests.js has kept every shift on the device either way, and
+ * Game Center holds each player's best per leaderboard, so a declined sheet
+ * costs one session's standing rather than a record.
  */
 (function () {
   'use strict';
@@ -73,6 +114,10 @@
   var PREFIX = 'com.magmacrunch.makemecookies.';
   var LEADERBOARD = PREFIX + 'shift';
   var STORAGE_KEY = 'mmc_achievements';
+  // Earned, not yet accepted. A second key rather than a field inside the
+  // first, so a device carrying an mmc_achievements from an earlier build keeps
+  // its history exactly as it is and simply has nothing pending.
+  var PENDING_KEY = 'mmc_achievements_pending';
 
   var IDS = ['shipped', 'star1', 'star2', 'star3',
     'rushbox', 'fullhouse', 'spotless', 'fireout'];
@@ -84,51 +129,100 @@
 
   var authenticated = false;
 
-  function loadReported() {
+  function loadIds(key) {
     try {
-      var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      var parsed = JSON.parse(localStorage.getItem(key) || '[]');
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
   }
 
-  var reported = loadReported();
-
-  function remember(id) {
-    if (reported.indexOf(id) !== -1) return;
-    reported.push(id);
+  function saveIds(key, ids) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reported));
+      localStorage.setItem(key, JSON.stringify(ids));
     } catch (e) {
       // Storage full or disabled. The worst case is a repeated banner, which
       // is not worth failing an achievement over.
     }
   }
 
-  function award(name) {
-    var id = PREFIX + name;
-    if (IDS.indexOf(name) === -1 || reported.indexOf(id) !== -1) return;
+  var reported = loadIds(STORAGE_KEY);
+  var pending = loadIds(PENDING_KEY);
+  // Reports the native side has been handed and has not answered yet. In
+  // memory only, deliberately: it exists to stop one box producing two
+  // banners, and a relaunch has no calls in flight to protect.
+  var inFlight = [];
+
+  function without(list, id) {
+    var at = list.indexOf(id);
+    if (at !== -1) list.splice(at, 1);
+  }
+
+  /** Earned. Recorded as owed until Game Center takes it. */
+  function markEarned(id) {
+    if (reported.indexOf(id) !== -1 || pending.indexOf(id) !== -1) return;
+    pending.push(id);
+    saveIds(PENDING_KEY, pending);
+  }
+
+  /** Accepted. This is the only thing that ever writes to the reported set. */
+  function markReported(id) {
+    if (reported.indexOf(id) === -1) {
+      reported.push(id);
+      saveIds(STORAGE_KEY, reported);
+    }
+    if (pending.indexOf(id) !== -1) {
+      without(pending, id);
+      saveIds(PENDING_KEY, pending);
+    }
+  }
+
+  /**
+   * Hand one id to the native side.
+   *
+   * Nothing reaches the reported set until the report has been accepted; see
+   * the header on why it used to, and what that cost. A rejection leaves the id
+   * pending, so the next box or the next return to the app tries it again.
+   */
+  function send(id) {
+    if (!id) return;
+    if (reported.indexOf(id) !== -1 || inFlight.indexOf(id) !== -1) return;
 
     var p = plugin();
     if (!p || typeof p.reportAchievement !== 'function') {
-      // No native half. Do NOT remember it: the player earned this, and the
-      // day the plugin lands they should get it on their next shift rather
-      // than having it silently written off now.
+      // No native half yet. It stays pending: the player earned this, and the
+      // day the plugin lands they should get it rather than having it silently
+      // written off now.
       return;
     }
 
-    // Optimistic: recorded before the round trip, so a slow or failed
-    // submission cannot produce two banners. GameKit queues and retries
-    // submissions itself once signed in again.
-    remember(id);
+    inFlight.push(id);
     Promise.resolve()
       .then(function () {
         return p.reportAchievement({ achievementId: id, percent: 100 });
       })
+      .then(function () {
+        without(inFlight, id);
+        markReported(id);
+      })
       .catch(function () {
-        // A failed report is not the player's problem and not worth a dialog.
+        // Not signed in, offline, or GameKit unhappy. Not the player's problem
+        // and not worth a dialog -- but not worth forgetting either.
+        without(inFlight, id);
       });
+  }
+
+  /** Everything still owed, tried again. Safe to call at any time. */
+  function flush() {
+    pending.slice().forEach(send);
+  }
+
+  function award(name) {
+    var id = PREFIX + name;
+    if (IDS.indexOf(name) === -1 || reported.indexOf(id) !== -1) return;
+    markEarned(id);
+    send(id);
   }
 
   function on(name, fn) {
@@ -182,7 +276,8 @@
   // Injected rather than written into web/index.html: the site has no Game
   // Center, and a button that opens nothing is worse than no button. Added
   // only once sign-in has actually succeeded, so a player who declined never
-  // sees it.
+  // sees it -- and added on a later sign-in too, which is what refresh() is
+  // for.
   function addLeaderboardButton() {
     var row = document.querySelector('#modal-scores .controls');
     if (!row || document.getElementById('btn-game-center')) return;
@@ -205,20 +300,52 @@
 
   // ---- sign in -------------------------------------------------------------
 
-  // Once, at load. GameKit presents its own sheet if the player has never
-  // signed in, and answers from cache afterwards; nothing here retries, since
-  // a player who declined has declined.
-  (function signIn() {
+  /**
+   * Ask the native side where the player stands, and remember the answer.
+   *
+   * At load and on every return to the app, for the reason in the header. A
+   * gained sign-in is the moment to offer the board and to settle what is
+   * owed; a lost one is worth noticing too, so anything reading
+   * `authenticated` is reading the current state rather than the state at
+   * launch.
+   */
+  function refresh() {
     var p = plugin();
-    if (!p || typeof p.signIn !== 'function') return;
-    Promise.resolve()
+    if (!p || typeof p.signIn !== 'function') return Promise.resolve(false);
+    return Promise.resolve()
       .then(function () { return p.signIn(); })
       .then(function (result) {
-        authenticated = !!(result && result.authenticated);
-        if (authenticated) addLeaderboardButton();
+        var now = !!(result && result.authenticated);
+        var gained = now && !authenticated;
+        authenticated = now;
+        if (gained) {
+          addLeaderboardButton();
+          flush();
+        }
+        return now;
       })
-      .catch(function () {});
-  })();
+      .catch(function () {
+        authenticated = false;
+        return false;
+      });
+  }
+
+  // Fire and forget: the shift is playable signed out, and blocking the first
+  // frame on a round trip to Apple would be a poor trade.
+  refresh();
+
+  // The only notice a webview gets that the player has been somewhere else,
+  // and so the only seam at which a sign-in made outside the app can be
+  // noticed at all. flush() as well as refresh(), because a report can also
+  // have been refused while signed in -- offline, or GameKit unhappy -- and
+  // that leaves a debt with no sign-in to gain. The double call costs nothing:
+  // send() refuses an id that is already reported or in flight.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      refresh();
+      flush();
+    }
+  });
 
   window.GameCookies = window.GameCookies || {};
   window.GameCookies.gameCenter = {
@@ -230,6 +357,14 @@
     get reported() {
       return reported.slice();
     },
+    // Earned and still owed to Game Center.
+    get pending() {
+      return pending.slice();
+    },
+    flush: flush,
+    // Re-checks and returns the current state. Here so a sign-in button, if
+    // the card ever grows one, has something to call that cannot hang.
+    signIn: refresh,
     show: function () {
       var p = plugin();
       if (p && typeof p.showLeaderboard === 'function') {
@@ -240,8 +375,11 @@
     // against the Game Center sandbox, which has its own reset.
     reset: function () {
       reported = [];
+      pending = [];
+      inFlight = [];
       try {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(PENDING_KEY);
       } catch (e) {}
     },
   };

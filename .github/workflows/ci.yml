@@ -307,6 +307,35 @@ jobs:
         working-directory: makemecookies
         run: python ios/tools/make-boards.py --check
 
+  # The three shims, which until 2026-09-29 were the one directory here that
+  # nothing ran against. They are also the code least able to afford that: the
+  # contract every one of them follows is "do nothing when the native side is
+  # missing", so every path in them catches and swallows, and a shim that has
+  # stopped working looks exactly like a shim running in a browser. There is no
+  # error to notice and no crash to report.
+  #
+  # Two bugs were in gamekit.js when the suite was written, both found in
+  # george-boole first, and both are now named tests: an achievement earned
+  # while signed out was banked as reported and lost for good, because
+  # GameCenterPlugin.swift rejects the report and the rejection was dropped;
+  # and `authenticated` was latched from one sign-in at page load, so signing in
+  # through Settings and coming back never offered the board again for that
+  # session. Neither is visible from the Swift side, neither shows up in a
+  # compile, and ios-build below was green through both.
+  #
+  # Plain Node with a hand-rolled harness, like web/tests/, so there is nothing
+  # to install and no reason to tie it to the Mac.
+  ios-shim:
+    name: ios shim
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: The app-only shims
+        run: node ios/tests/test-shim.js
+
   # The vendored Game Center plugin against its upstream in engines/hypnopompia.
   # Editing the Swift here is invisible from this repo, because a copy always
   # verifies clean against itself, so the check runs from the shell's end with

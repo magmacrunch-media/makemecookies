@@ -1,7 +1,7 @@
 # makemecookies!x4, iOS
 
 **A complete App Store port, unsubmitted.** The bundle build, the Xcode project,
-the two shims, the app icon and launch image, `App.entitlements`, and every App
+the three shims, the app icon and launch image, `App.entitlements`, and every App
 Store Connect field all exist, and CI checks each of them on every push. What is
 outstanding is an Apple account rather than code: the paid membership, the Game
 Center capability that needs it, and the leaderboard and achievements that
@@ -346,6 +346,74 @@ Three things they know that are easy to learn the hard way:
   the splash is all ground, and the icon's stops came out as hot pink across a
   whole screen. The splash carries its own, darker.
 
+## The shims are tested now
+
+```
+node ios/tests/test-shim.js
+```
+
+Plain Node, no dependencies, the same hand-rolled harness style as `web/tests/`,
+and the `ios-shim` job runs it on every push. Until 2026-09-29 `shim/` was the
+one directory in this repo nothing ran against, and it is the directory least
+able to afford that: the contract every shim follows is *degrade to doing
+nothing when the native side is missing*, so each one catches and swallows on
+every path. A shim that has stopped working is indistinguishable from a shim
+running in a browser. There is nothing to see.
+
+Two bugs were in `gamekit.js`, both found in george-boole first, whose two
+gamekit files are this one split apart, and both are named tests now:
+
+- **An achievement earned while signed out was lost for good.** The id was
+  recorded as reported *before* the round trip, to stop a slow submission
+  producing two banners. But `GameCenterPlugin.swift` rejects
+  `reportAchievement` outright when the player is not signed in, the rejection
+  was caught and dropped, and `award()` returns early on a remembered id for
+  ever after. Declining Apple's sign-in sheet, which is a button everybody
+  gets, silently cost the player every achievement they went on to earn.
+- **A sign-in made after launch was never noticed.** `authenticated` was
+  latched from one fire-and-forget `signIn()` at load and never revisited, and
+  what it gates here is the GAME CENTER button, so a player who declined at
+  launch, signed in through Settings and came back was offered no way to look
+  at the board for the rest of the session. The Swift side had already been
+  hardened for the second call: its `reported` flag exists precisely so a later
+  `signIn()` answers from the current state instead of hanging behind a handler
+  that has already fired. Nothing here ever made one.
+
+Both now hang off `visibilitychange`, which is the only notice a webview gets
+that the player has been elsewhere, and leaving to sign in through Settings or
+the Game Center app and coming back is the case that matters. There is a
+**second localStorage key** as a result, `mmc_achievements_pending`: earned and
+still owed, retried on the next award and on the next return to the app, and
+cleared only when Game Center accepts the report. `mmc_achievements` keeps its
+old meaning exactly, so a device that already has one is unaffected.
+
+**One difference from george-boole worth not reading past.** There, the latched
+flag also gated score submission, so a later sign-in cost the player a
+session's worth of leaderboard entries. Here it never gated submission:
+`gamekit.js` submits every finished shift and lets the Swift guard refuse it,
+so what this bug cost was the button and the public `authenticated` reading,
+not the scores. Same fix either way, smaller blast radius.
+
+Note what did **not** catch either of these. `ios-build` compiles the app,
+asserts `GameCenterPlugin` is in `App.debug.dylib` and that the privacy
+manifest shipped, and was green throughout. Both bugs are in the JavaScript
+half of a contract whose two ends are written in different languages, and the
+Swift end was correct in both.
+
+The suite is 116 checks across all three shims rather than two regression
+tests: the eight achievement ids against the moments that earn them, the
+leaderboard taking every finished shift, the local board's sort and its
+ten-row cap, the haptic mapping in the table below, and every shim against no
+plugin at all and against a `localStorage` that refuses writes. Two choices in
+it are load-bearing. The page is a real little DOM rather than a bag of
+always-truthy stubs, because both `gamekit.js` and `bests.js` reach into
+`#modal-scores` and one of them relabels a `th` by position, so a stub that
+answered every lookup would report both working when they had matched nothing.
+And `TRAY_CAP` and `localScores` are declared in the test realm as the global
+lexical bindings the game declares them as, rather than as properties of
+`window`, which is the only way the late bare-name reads those two comments
+describe are exercised at all.
+
 ## The three shims, and the only npm plugin in the app
 
 `shim/gamekit.js`, `shim/haptics.js` and `shim/bests.js`, injected by
@@ -399,16 +467,24 @@ Game Center has to sit inside; this game's scoreboard is four columns and a
 close button, so the split would be two files of preamble around thirty lines
 of work. Split it if a third iOS game arrives and this one grows a UI.
 
-It signs in once at load, submits **every** finished shift to the leaderboard,
-and awards the eight achievements from `cookies:*` events. Submitting every
-shift rather than only good ones is deliberate: Game Center keeps each player's
-best itself, so a worse shift is harmless, and the alternative makes the board a
-record of the days somebody remembered to care.
+It signs in at load and again on every return to the app, submits **every**
+finished shift to the leaderboard, and awards the eight achievements from
+`cookies:*` events. Submitting every shift rather than only good ones is
+deliberate: Game Center keeps each player's best itself, so a worse shift is
+harmless, and the alternative makes the board a record of the days somebody
+remembered to care.
 
 The GAME CENTER button is injected into `#modal-scores` and only after sign-in
 actually succeeds, so a player who declined never sees a button that opens
 nothing. That is also the reason it is injected rather than written into
-`web/index.html`, which has no Game Center at all.
+`web/index.html`, which has no Game Center at all. It is injected on a *later*
+sign-in too, which it was not until 2026-09-29; the section on the tests above
+is what that cost.
+
+An achievement is not banked until Game Center has accepted the report. What is
+earned and still owed lives in `mmc_achievements_pending`, retried on the next
+award and on every return to the app, and the in-flight list that stops one box
+producing two banners is in memory, which is where it belongs.
 
 One thing is read from the game rather than from an event: `TRAY_CAP`, for the
 `fullhouse` achievement. That is reading the config, not re-deriving a rule. It
