@@ -400,7 +400,7 @@ manifest shipped, and was green throughout. Both bugs are in the JavaScript
 half of a contract whose two ends are written in different languages, and the
 Swift end was correct in both.
 
-The suite is 131 checks across all three shims rather than two regression
+The suite is 149 checks across all three shims rather than two regression
 tests: the eight achievement ids against the moments that earn them, the
 leaderboard taking every finished shift, the local board's sort and its
 ten-row cap, the haptic mapping in the table below, and every shim against no
@@ -422,6 +422,23 @@ bug with nothing to see, since a webview logs it where nobody is looking and
 carries on. `gameCenter.show()` was handing its caller a promise that
 rejected whenever the player was signed out, and every caller drops the
 return value, so it leaked one per tap.
+
+**The third round found nothing here, and that is the result rather than a
+shrug.** Asked of `haptics.js` and of the achievement half of `gamekit.js` --
+is anything read once that needs reading again, can anything reject or throw
+uncaught -- both answered no. Every plugin call in `gamekit.js` is already
+inside its promise chain, including `signIn()`, which is what george-boole's
+was not: there `refresh()` called the plugin ahead of the chain, and since
+`refresh()` runs bare at load above the listeners and above the public object,
+a proxy that threw would have taken the whole file down for the session. This
+file was written second and got it right.
+
+The tests went in anyway and they are the point of this paragraph: the fake
+plugin can now throw rather than reject on `signIn`, `showLeaderboard` and
+`reportAchievement`, it can be missing `signIn` altogether, and the fake Taptic
+Engine has a `failCall` and a `throwOnCall`. Being correct and being pinned are
+different states, and the two games have already drifted apart twice on exactly
+this contract. 149 checks now, 131 before.
 
 ## The three shims, and the only npm plugin in the app
 

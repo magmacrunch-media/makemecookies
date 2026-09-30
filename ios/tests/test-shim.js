@@ -361,8 +361,16 @@ function makeGameCenter(opts) {
     calls,
     authenticated: !!(opts && opts.authenticated),
     failSignIn: false,
+    // A proxy that throws instead of returning a rejected promise. Capacitor's
+    // does not, today; every call in gamekit.js is written as though it might do
+    // either, and these switches are what make that a tested property rather
+    // than a comment. george-boole had the fault these found.
+    throwOnSignIn: false,
+    throwOnShow: false,
+    throwOnReport: false,
     signIn() {
       calls.signIn++;
+      if (gc.throwOnSignIn) throw new Error('the bridge threw');
       if (gc.failSignIn) return Promise.reject(new Error('sign-in failed'));
       return Promise.resolve({ authenticated: gc.authenticated });
     },
@@ -377,11 +385,13 @@ function makeGameCenter(opts) {
     },
     showLeaderboard(o) {
       calls.showLeaderboard.push(o);
+      if (gc.throwOnShow) throw new Error('the bridge threw');
       if (!gc.authenticated) return Promise.reject(new Error('not signed in to Game Center'));
       return Promise.resolve();
     },
     reportAchievement(o) {
       calls.reportAchievement.push(o);
+      if (gc.throwOnReport) throw new Error('the bridge threw');
       if (!o || typeof o.achievementId !== 'string') {
         return Promise.reject(new Error('achievementId is required'));
       }
@@ -392,13 +402,28 @@ function makeGameCenter(opts) {
   return gc;
 }
 
+/**
+ * The Taptic Engine, which is the one plugin here whose refusal is ordinary
+ * rather than exceptional: a device without one rejects. `throwOnCall` is that
+ * refusal arriving as a synchronous throw instead, which Capacitor's proxy does
+ * not do today -- haptics.js guards both, and it is the only shim whose calls
+ * are not already inside a promise chain, so these are what keep the try there.
+ */
 function makeHaptics() {
   const calls = { impact: [], notification: [] };
-  return {
+  const h = {
     calls,
-    impact(o) { calls.impact.push(o && o.style); return Promise.resolve(); },
-    notification(o) { calls.notification.push(o && o.type); return Promise.resolve(); },
+    throwOnCall: false,
+    failCall: false,
+    impact(o) { calls.impact.push(o && o.style); return h.answer(); },
+    notification(o) { calls.notification.push(o && o.type); return h.answer(); },
+    answer() {
+      if (h.throwOnCall) throw new Error('no Taptic Engine');
+      if (h.failCall) return Promise.reject(new Error('no Taptic Engine'));
+      return Promise.resolve();
+    },
   };
+  return h;
 }
 
 /**
@@ -636,6 +661,75 @@ async function signInTests() {
     await settle();
     const controls = env.doc.querySelector('#modal-scores .controls');
     assertEqual(controls.children.length, 2, 'and coming back twice injects one button');
+  }
+
+  section('gamekit: a native half that throws rather than rejecting');
+  {
+    // refresh() runs bare at load, above the cookies:* listeners and above
+    // window.GameCookies.gameCenter, so a throw there would not be one lost
+    // sign-in: it would be the whole file, silently, for the session. This file
+    // wraps its own call and george-boole's did not, which is the fault these
+    // tests were written for -- pinned here so the two do not drift back apart.
+    const env = makeEnv({ authenticated: true });
+    env.gc.throwOnSignIn = true;
+    env.load('gamekit.js');
+    await settle();
+    assert(env.cookies().gameCenter !== undefined,
+      'a throwing signIn does not take the rest of the file down with it');
+    assert(env.cookies().gameCenter.authenticated === false, 'and reads as signed out');
+    assert(env.button() === null, 'offering no button');
+
+    env.gc.throwOnSignIn = false;
+    env.resume();
+    await settle();
+    assert(env.cookies().gameCenter.authenticated === true,
+      'the visibilitychange listener was registered, so it recovers');
+
+    env.fire('shift-end', { score: 500, stars: 0 });
+    await settle();
+    assert(env.gc.calls.submitScore.length === 1,
+      'and so were the cookies:* listeners, which is what a throw at load would cost');
+    assert(env.errors.length === 0, 'with nothing logged either way');
+  }
+  {
+    // A native half with no signIn at all: the same fault by a different road,
+    // and what this plugin drifting from hypnopompia looks like from here.
+    const env = makeEnv({ authenticated: true });
+    delete env.gc.signIn;
+    env.load('gamekit.js');
+    await settle();
+    assert(env.cookies().gameCenter !== undefined, 'a plugin missing signIn is survived');
+    assert(env.cookies().gameCenter.authenticated === false, 'and reads as signed out');
+  }
+  {
+    const env = makeEnv({ authenticated: true }).load('gamekit.js');
+    await settle();
+    env.gc.throwOnShow = true;
+    let threw = false;
+    let result = null;
+    try {
+      result = await env.cookies().gameCenter.show();
+    } catch (e) {
+      threw = true;
+    }
+    assert(threw === false, 'a throwing showLeaderboard does not throw out of show()');
+    assert(result === false, 'it resolves false like any other refusal');
+  }
+  {
+    const env = makeEnv({ authenticated: true }).load('gamekit.js');
+    await settle();
+    env.gc.throwOnReport = true;
+    env.fire('fire-out', { count: 1 });
+    await settle();
+    assertEqual(env.stored('mmc_achievements'), null, 'a throwing report is not banked');
+    assertEqual(env.cookies().gameCenter.pending, [P + 'fireout'], 'it stays owed');
+    assert(env.errors.length === 0, 'and is not logged as an error');
+
+    env.gc.throwOnReport = false;
+    env.resume();
+    await settle();
+    assertEqual(env.stored('mmc_achievements'), [P + 'fireout'],
+      'and lands on the next return to the app');
   }
 
   section('gamekit: signing out mid-session');
@@ -1061,6 +1155,33 @@ async function hapticTests() {
 
     const next = makeEnv({ authenticated: true, storage: env.storage }).load('haptics.js');
     assert(next.cookies().haptics.enabled === false, 'and it is still off on the next launch');
+  }
+
+  section('haptics: a device that refuses');
+  {
+    // An iPad, or any device with no Taptic Engine.
+    const env = makeEnv({ authenticated: true }).load('haptics.js');
+    env.haptics.failCall = true;
+    const before = unhandled.length;
+    env.fire('perfect', { count: 1 });
+    env.fire('box', { count: 1, rush: true });
+    env.fire('rush', { count: 1 });
+    env.runTimers();
+    await settle();
+    assert(env.errors.length === 0, 'every buzz being rejected is not an error');
+    assertEqual(unhandled.length, before,
+      'and the rejections are caught rather than left to escape');
+  }
+  {
+    const env = makeEnv({ authenticated: true }).load('haptics.js');
+    env.haptics.throwOnCall = true;
+    env.fire('perfect', { count: 1 });
+    env.fire('fire', { count: 1 });
+    env.fire('shift-end', { score: 10, bonus: 0 });
+    env.runTimers();
+    await settle();
+    assert(env.errors.length === 0, 'a throwing plugin is survived too');
+    assert(env.cookies().haptics.enabled === true, 'and the shim is still live after it');
   }
 
   section('haptics: no native half');
