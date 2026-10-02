@@ -75,15 +75,53 @@ const { createBuild, transforms } = await import(
 );
 
 /**
- * Files in `web/` that exist for developing the browser version and have no
- * business in a shipped bundle.
+ * Files in `web/` that exist for developing the browser version, or for a
+ * platform that is not this one, and have no business in a shipped bundle.
  *
- * Empty, and deliberately so rather than by oversight: this game's `web/` is
- * index.html, css/, js/ and audio/ with no test pages, guides or second entry
- * point. george-boole's list exists because it has all four. Kept as an empty set
- * so the next game has somewhere obvious to put its own.
+ * This was an empty set, with a comment saying `web/` was index.html, css/, js/
+ * and audio/ and nothing else. That was true when it was written. The folder
+ * has since gained tests/, manifest.json and sw.js, all three of which were
+ * shipping, and the comment went on describing a folder that no longer existed.
+ * CARRY and `checkWebInventory` below exist so that cannot happen quietly
+ * again: the two lists are now held against the tree in both directions.
  */
-const EXCLUDE = new Set([]);
+const EXCLUDE = new Set([
+  'tests',
+
+  // The PWA half. It stays in `web/` on purpose -- it is wanted for a
+  // Microsoft Store packaging later -- and must not be in an iOS bundle.
+  //
+  // The manifest is merely pointless here. The service worker is a bug waiting
+  // for the second release: it precaches index.html and every css and js file
+  // under a cache named `cookies-v1`, and its default fetch branch is
+  // cache-first with no revalidation. The name never changes, so `install`
+  // only re-runs when sw.js itself changes bytes, which a release touching
+  // only the game does not. Ship that release and the player keeps running the
+  // old code out of the cache, with the new code unread on disk beside it, and
+  // no way to correct it but another release.
+  //
+  // On the website this never bites, because assets are requested with a `?v=`
+  // stamp that moves when the file does. This pipeline strips those stamps,
+  // which removes the one thing that made it self-correcting, in exactly the
+  // build that cannot be fixed from a server. A service worker earns nothing
+  // in a Capacitor app regardless: every asset is already on disk.
+  'sw.js',
+  'manifest.json',
+]);
+
+/**
+ * Everything in `web/` that goes into the bundle. With EXCLUDE above, this is
+ * the complete inventory of the folder's top level, and `checkWebInventory`
+ * stops the build on anything in neither list, or on anything either list
+ * names that has since been deleted.
+ *
+ * The copying is not the point; `copyWeb` would carry these without being
+ * told. The point is that a file arriving in `web/` is read by somebody before
+ * it can reach the App Store. Top level only: a new stylesheet under css/ is
+ * inert, and index.html's references are already policed by the stamps and the
+ * self-contained sweep.
+ */
+const CARRY = ['index.html', 'css', 'js', 'img', 'audio'];
 
 /**
  * Every `../shared/` file `web/index.html` is allowed to name, and what to do
@@ -170,6 +208,14 @@ const website = build.website;
 
 // ── copy web/ ────────────────────────────────────────────────────────────────
 
+// Before anything is copied, so an unread file stops the build rather than
+// being discovered in the bundle afterwards.
+build.checkWebInventory(CARRY, EXCLUDE);
+
+// Before anything is copied, so an unread file stops the build rather than
+// being discovered in the bundle afterwards.
+build.checkWebInventory(CARRY, EXCLUDE);
+
 const oggDropped = build.copyWeb({ exclude: EXCLUDE, drop: (rel) => rel.endsWith('.ogg') });
 
 if (!oggDropped) {
@@ -215,6 +261,17 @@ const dropped = Object.keys(SHARED).filter((f) => SHARED[f] === 'drop');
 // `ChatWidget.connect(MC_CHAT_OPTS);`. Matching on either identifier catches
 // both, and leaving one behind would throw on a missing AdChat and take the
 // page down with it.
+// Two lines, two transforms, so that if either moves the build says which.
+// Folding them together would let a changed registration line hide behind a
+// manifest link that still matched, which is the no-op edit() makes fatal.
+edit(state, 'drop the service worker registration', (html) =>
+  html.replace(/[ \t]*<script>[^<]*serviceWorker[^<]*<\/script>\r?\n/, '')
+);
+
+edit(state, 'drop the web app manifest link', (html) =>
+  html.replace(/[ \t]*<link rel="manifest"[^>]*>\r?\n/, '')
+);
+
 edit(state, 'drop chat and score-server tags', (html) =>
   html
     .split('\n')
