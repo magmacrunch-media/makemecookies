@@ -41,6 +41,14 @@ jobs:
         working-directory: web/tests
         run: node test-simulation.js
 
+      # The service worker, which cannot be exercised in a browser and whose last
+      # bug was invisible from the page: it precached unstamped paths while
+      # index.html requested stamped ones, so the cache never matched and the
+      # site had no offline support while looking like it did.
+      - name: Service worker routing
+        working-directory: web/tests
+        run: node test-sw.js
+
       # STARS in config.js is derived from this bench, so a change to the oven
       # cycle can silently move what a star is worth: three stars could become
       # unreachable, or one star could become something you get by standing
