@@ -37,6 +37,63 @@ Puzzle is the wrong call here and is worth saying out loud, because the other
 magmacrunch game on the store is one. Nothing in this game is solved; it is
 reaction under time pressure, and the shift is over when the song is.
 
+## Price
+
+**$1.99, paid up front. Not free, and not free with ads.** Set in App Store
+Connect under Pricing and Availability, so nothing here is pasted anywhere;
+this heading is the decision and the reasoning, which live with the rest of the
+listing rather than in somebody's memory. The checker ignores it, because a
+heading with no character limit in parentheses is parsed and skipped.
+
+**A dollar under george-boole, deliberately, and the gap is the point.** That
+game has eight difficulties, a Gauntlet, a seven-entry codex and a binary
+primer two taps from its title screen. This one is one song, one shift of about
+fifty seconds, and the same four RUSH windows every time. Both at $2.99 would
+make the ladder say nothing, and $2.99 is worth keeping as the price that means
+"this is the substantial one". Pricing honestly below it costs a dollar a sale
+and buys a listing nobody has to argue with.
+
+**$0.99 was the other candidate and was rejected.** It is the tier that reads
+as disposable, and the arithmetic does not rescue it: under the Small Business
+Program's 15% commission $1.99 keeps about $1.69 against $0.99's $0.84, so
+$0.99 needs twice the units to stand still. What is scarce for an unknown
+publisher is not price but discovery, which is george-boole's reason for not
+being free and holds here unchanged. The free web build at
+magmacrunch.com/arcade/makemecookies/ is what does the reaching.
+
+**Do not reuse george-boole's break-even arithmetic.** That section earns its
+$2.99 against the $99 Apple Developer Program fee, roughly forty sales a year.
+The fee is per account and per year rather than per app, so george-boole
+already covers it and this price is marginal revenue, not fee recovery. Nothing
+here has to clear $99, and an argument that assumes it does will reach for a
+higher number than the game can carry.
+
+**A price does not contradict the Description.** That block promises "No
+purchases", and it stays true: the promise is about purchases *inside* the app,
+and there are none. Buying the app is not an in-app purchase. Do not soften
+that line on account of the price.
+
+**Ads are ruled out, for the same architectural reason as george-boole's.** The
+"Do you collect data? No" answer below and the empty `PrivacyInfo.xcprivacy`
+both argue from the app contacting nothing, `package.mjs` fails the build on any
+asset fetched over http(s), and the Description sells the absence of ads as a
+feature. An ad SDK costs all three, plus a tracking label, an ATT prompt and a
+rewrite of magmacrunch.com/privacy/makemecookies/.
+`engines/hypnopompia/HOUSE.md` Part 4 has the full argument and its three
+coherent positions; this is the third of them, "paid app, free on the web", and
+it is now the house's position for both games rather than an open question.
+
+**The Small Business Program is per account, so it is applied for once.** It
+needs an active membership, so it sits behind the same enrollment this app
+does, and without it the commission is 30% rather than 15%, which doubles the
+units every number above needs.
+
+**Do not launch at a discount.** Promotional text below is the field to change
+for a sale, and it needs no new build. Two paid apps also make an App Bundle
+possible, which Apple allows for two to ten paid apps on one account at or
+below the sum of their prices, so $2.99 plus $1.99 leaves room for a $3.99 pair
+later. Recorded as an option, not a decision.
+
 ## Promotional text (170)
 
 Editable without a new build, so this is the field to change for a sale, an
