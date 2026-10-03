@@ -18,6 +18,9 @@ AdRPG.initCanvas(canvas);
 const DEBUG = new URLSearchParams(location.search).has('debug');
 
 let st = createShift();
+// Wall-clock start of the current shift, for the backstop at the end of
+// update(). Not a second clock for the shift itself: the song is that.
+let shiftStartedAt = 0;
 let running = false;
 let paused = false;
 let finished = false;
@@ -149,6 +152,11 @@ const prevDown = {};
 
 const FRAME_MS = 1000 / 30;
 
+// How far past the song's own end the shift is allowed to run before the
+// count ends it anyway. See the end of update() for why the count is a
+// backstop rather than a race, and why this is measured on the wall clock.
+const END_BACKSTOP_MS = 2000;
+
 // ── HUD ──────────────────────────────────────────────────────────────
 const elScore = document.getElementById('hud-score');
 const elShipped = document.getElementById('hud-shipped');
@@ -262,7 +270,29 @@ function update(dtFactor) {
   music.volume = inspecting ? 0.25 : 0.55;
 
   updateHUD();
-  if (st.elapsed >= st.shiftMs - 20) endShift();
+
+  // The song's own `ended` event finishes a shift whose music is playing.
+  // Ending on our own count instead means pausing the element a fraction
+  // before the last note, which is heard as the song being cut off rather
+  // than as the whistle blowing - and that fraction is neither small nor
+  // bounded, because the accumulator above keeps any lead it picked up
+  // before playback started, permanently, by taking the later of the two
+  // clocks. It used to subtract 20ms on top of that, in the same direction.
+  //
+  // So the count is a backstop now rather than a race with the song:
+  //
+  //   - no usable song (blocked, undecodable, errored) means there is no
+  //     `ended` coming and the count is the only clock there is;
+  //   - otherwise nothing ends the shift early, and the wall clock catches
+  //     the cases `ended` cannot reach.
+  //
+  // The backstop reads the wall clock rather than st.elapsed deliberately.
+  // elapsed stops advancing the moment currentTime does, so a song that
+  // stalls mid-shift, or that reaches its end without firing `ended`, used
+  // to leave the shift running with nothing able to end it at all.
+  const songIsClock = !audioProblem && chosenSource && !music.paused;
+  if (!songIsClock && st.elapsed >= st.shiftMs) endShift();
+  else if (now - shiftStartedAt >= st.shiftMs + END_BACKSTOP_MS) endShift();
 }
 
 const gameLoop = AdRPG.createGameLoop({ update, render, fps: 30 });
@@ -300,6 +330,7 @@ function startShift() {
   st.shiftMs = keep;
 
   const now = performance.now();
+  shiftStartedAt = now;
   armShift(st, tune(st), now);
   momentMark = snapshot(st);
 
@@ -361,6 +392,21 @@ function endShift() {
   document.getElementById('initials-input').value = '';
   reportShift(bonus);
   showModal('modal-gameover');
+
+  // Nothing had ever focused this field, so the obvious move at the end of a
+  // shift - read the card, type your initials - did nothing at all, and the
+  // `placeholder="AAA"` made it read as a value already filled in rather
+  // than an empty box waiting for one. There is no autofocus on it either;
+  // this is the whole of the fix. Reported from outside, which is the only
+  // way a bug like this is ever found: every test here already knew to click.
+  //
+  // preventScroll because the card sits in a fixed overlay that scrolls on a
+  // short landscape phone, where focusing without it jumps the card. The
+  // app's bundle hides this input (ios.css, since Game Center takes the name)
+  // and focus() on a display:none element does nothing, so no guard is needed
+  // for that case.
+  const initials = document.getElementById('initials-input');
+  if (initials) initials.focus({ preventScroll: true });
 }
 
 /**
